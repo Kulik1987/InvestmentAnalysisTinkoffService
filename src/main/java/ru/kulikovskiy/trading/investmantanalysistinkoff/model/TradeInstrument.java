@@ -13,7 +13,7 @@ public class TradeInstrument {
     private String figi;
     private String name;
     private List<BuyInstrument> buyInstruments;
-    private Map<String, SellInstrument> sellInstrument;
+    private List<SellInstrumentPercentage> sellInstrument;
     private Dividend dividend;
 
     public TradeInstrument(String figi) {

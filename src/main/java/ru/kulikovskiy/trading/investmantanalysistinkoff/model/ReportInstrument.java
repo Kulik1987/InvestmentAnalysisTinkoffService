@@ -9,4 +9,6 @@ public class ReportInstrument {
     private String averageProfit;
     private String averagePercentProfit;
     private String averagePercentProfitYear;
+    private String averageCountDay;
+    private int quantityAll;
 }

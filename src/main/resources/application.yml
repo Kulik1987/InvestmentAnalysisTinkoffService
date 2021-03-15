@@ -4,9 +4,10 @@ spring:
   main:
     banner-mode: log
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: investment
-    password: investment
+    url: jdbc:postgresql://172.30.0.1:5437/postgres
+    #url: jdbc:postgresql://localhost:5437/postgres
+    username: invest
+    password: invest
   jpa:
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQL10Dialect

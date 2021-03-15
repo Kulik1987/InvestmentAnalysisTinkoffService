@@ -43,8 +43,8 @@ public class InvestmentAnalysisTinkoff {
     }
 
     @RequestMapping(value = "instruments", method = RequestMethod.GET)
-    public ResponseEntity<InstrumentResponse> getnstruments() {
-        InstrumentResponse response = new InstrumentResponse();
+    public ResponseEntity<InstrumentDto> getnstruments() {
+        InstrumentDto response = new InstrumentDto();
         try {
             String token = clientConfig.getToken();
             checkEmptyToken(token);
@@ -57,43 +57,77 @@ public class InvestmentAnalysisTinkoff {
     }
 
     @RequestMapping(value = "operations", method = RequestMethod.GET)
-    public ResponseEntity<OperationResponse> getAnalyzePortfolio(@NotNull @RequestParam("brokerType") String brokerType,
-                                              @NotNull @RequestParam("from") String fromDate,
-                                              @RequestParam("to") String toDate) {
-        OperationResponse operationResponse = new OperationResponse();
+    public ResponseEntity<OperationDto> getAnalyzePortfolio(@NotNull @RequestParam("brokerType") String brokerType,
+                                                            @NotNull @RequestParam("from") String fromDate,
+                                                            @RequestParam("to") String toDate) {
+        OperationDto operationDto = new OperationDto();
         try {
             String token = clientConfig.getToken();
             checkEmptyToken(token);
             if (toDate == null) {
                 toDate = getStringFromLocalDateTime(LocalDateTime.now());
             }
-            operationResponse = operationsService.getOperationsBetweenDate(fromDate, toDate, token, brokerType);
-            return ResponseEntity.ok(operationResponse);
+            operationDto = operationsService.getOperationsBetweenDate(fromDate, toDate, token, brokerType);
+            return ResponseEntity.ok(operationDto);
         } catch (NotFoundException e) {
-            operationResponse.setErrorMessage(e.getMessage());
-            return ResponseEntity.badRequest().body(operationResponse);
+            operationDto.setErrorMessage(e.getMessage());
+            return ResponseEntity.badRequest().body(operationDto);
         }
     }
 
     @RequestMapping(value = "reportAllDayAllInstrument", method = RequestMethod.GET)
-    public ResponseEntity<ReportAllDayAllMoneyResponse> getReportAllDayAllInstrument(@NotNull @RequestParam("brokerType") String brokerType) {
+    public ResponseEntity<AllMoneyReportDto> getReportAllDayAllInstrument(@NotNull @RequestParam("brokerType") String brokerType) {
         try {
             String token = clientConfig.getToken();
             checkEmptyToken(token);
             return ResponseEntity.ok(analyzePortfolioService.getReportAllDayAllInstrument(token, brokerType));
         } catch (NotFoundException e) {
-            return ResponseEntity.ok().body(new ReportAllDayAllMoneyResponse(e.getMessage()));
+            return ResponseEntity.ok().body(new AllMoneyReportDto(e.getMessage()));
         }
     }
 
+    @RequestMapping(value = "reportAllDayAllInstrumentSeparatePayIn", method = RequestMethod.GET)
+    public ResponseEntity<AllMoneyReportDto> getReportAllDayAllInstrumentSeparatePayIn(@NotNull @RequestParam("brokerType") String brokerType) {
+        try {
+            String token = clientConfig.getToken();
+            checkEmptyToken(token);
+            return ResponseEntity.ok(analyzePortfolioService.getReportAllDayAllInstrumentSeparatePayIn(token, brokerType));
+        } catch (NotFoundException e) {
+            return ResponseEntity.ok().body(new AllMoneyReportDto(e.getMessage()));
+        }
+    }
+
+    @RequestMapping(value = "reportAllDayByTickerCloseOperation", method = RequestMethod.GET)
+    public ResponseEntity<OneTickerCloseOperationReportDto> getReportAllDayAllInstrumentCloseOperation(@NotNull @RequestParam("brokerType") String brokerType, @NotNull @RequestParam("ticker") String ticker) {
+        try {
+            String token = clientConfig.getToken();
+            checkEmptyToken(token);
+            return ResponseEntity.ok(analyzePortfolioService.getReportAllDayByTickerCloseOperation(token, brokerType, ticker));
+        } catch (NotFoundException e) {
+            return ResponseEntity.ok().body(new OneTickerCloseOperationReportDto(e.getMessage()));
+        }
+    }
+
+
     @RequestMapping(value = "reportAllDayBreakUpSellInstrument", method = RequestMethod.GET)
-    public ResponseEntity<ReportAllDayBreakUpInstrumentResponse> getReportAllDayBreakUpInstrument(@NotNull @RequestParam("brokerType") String brokerType) {
+    public ResponseEntity<BreakUpSellInstrumentReportDto> getReportAllDayBreakUpInstrument(@NotNull @RequestParam("brokerType") String brokerType) {
         try {
             String token = clientConfig.getToken();
             checkEmptyToken(token);
             return ResponseEntity.ok().build();
         } catch (NotFoundException e) {
-            return ResponseEntity.ok().body(new ReportAllDayBreakUpInstrumentResponse(e.getMessage()));
+            return ResponseEntity.ok().body(new BreakUpSellInstrumentReportDto(e.getMessage()));
+        }
+    }
+
+    @RequestMapping(value = "reportAllTickerCloseOperationReportDto", method = RequestMethod.GET)
+    public ResponseEntity<AllTickerCloseOperationReportDto> getAllTickerCloseOperationReportDto(@NotNull @RequestParam("brokerType") String brokerType) {
+        try {
+            String token = clientConfig.getToken();
+            checkEmptyToken(token);
+            return ResponseEntity.ok(analyzePortfolioService.getAllTickerCloseOperationReportDto(token, brokerType));
+        } catch (NotFoundException e) {
+            return ResponseEntity.ok().body(new AllTickerCloseOperationReportDto(e.getMessage()));
         }
     }
 }

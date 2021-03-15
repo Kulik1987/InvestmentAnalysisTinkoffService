@@ -1,9 +1,8 @@
 package ru.kulikovskiy.trading.investmantanalysistinkoff.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.InstrumentResponse;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.InstrumentDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.Instruments;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.repository.InstrumentsRepository;
@@ -18,8 +17,8 @@ public class InstrumentsServiceImpl implements InstrumentsService {
     private InvestmentTinkoffService investmentTinkoffService;
 
     @Override
-    public InstrumentResponse getInstruments(String token) throws NotFoundException {
-        InstrumentResponse response = new InstrumentResponse();
+    public InstrumentDto getInstruments(String token) throws NotFoundException {
+        InstrumentDto response = new InstrumentDto();
         response.setCountStock(getStocks(token));
         response.setCountBond(getBonds(token));
         response.setCountEtf(getEtfs(token));

@@ -4,15 +4,15 @@ import lombok.Data;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.PercentageInstrument;
 
 @Data
-public class ReportAllDayAllMoneyResponse {
+public class AllMoneyReportDto {
     private PercentageInstrument reportInstrument;
     private String errorMessage;
 
-    public ReportAllDayAllMoneyResponse(String errorMessage) {
+    public AllMoneyReportDto(String errorMessage) {
         this.errorMessage = errorMessage;
     }
 
-    public ReportAllDayAllMoneyResponse(PercentageInstrument reportInstrument) {
+    public AllMoneyReportDto(PercentageInstrument reportInstrument) {
         this.reportInstrument = reportInstrument;
     }
 }

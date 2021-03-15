@@ -1,0 +1,83 @@
+create schema investment
+
+create table investment.account
+    (
+        broker_account_id   varchar(36) not null
+            constraint broker_account_id_pkey
+                primary key,
+        broker_account_type varchar(20),
+        first_name          varchar(36),
+        last_name           varchar(36),
+        token               varchar(100),
+        close_account       boolean default false
+    );
+create table investment.currency_operation
+(
+    id                  varchar(40) not null
+        constraint currency_operation_pk
+            primary key,
+    currency            varchar(3),
+    date_operation      timestamp,
+    operation_type      varchar(30),
+    course              double precision,
+    quantity            integer,
+    payment             double precision,
+    status              varchar(10),
+    commission_value    double precision,
+    commission_currency varchar(3),
+    figi                varchar(30)
+);
+create table investment.exchange_rate
+(
+    id        varchar(36) not null
+        constraint exchange_rate_pkey
+            primary key,
+    ccypair   varchar(6)  not null,
+    tick_time timestamp   not null,
+    spot      numeric(2, 2)
+);
+create table investment.instrument_operation
+(
+    id                  varchar(40) not null
+        constraint instrument_operation_pk
+            primary key,
+    currency            varchar(3),
+    date_operation      timestamp,
+    operation_type      varchar(30),
+    course              double precision,
+    quantity            integer,
+    payment             double precision,
+    status              varchar(10),
+    commission_value    double precision,
+    commission_currency varchar(3),
+    figi                varchar(30)
+);
+create table investment.instruments
+(
+    figi                varchar(50) not null
+        constraint instrument_pk
+            primary key,
+    ticker              varchar(30),
+    isin                varchar(20),
+    min_price_increment real,
+    lot                 integer,
+    currency            varchar(5),
+    name                varchar(100),
+    type                varchar(30)
+);
+create table investment.profit_instrument
+(
+    id                integer          not null
+        constraint profit_instrument_pkey
+            primary key,
+    buy_date          date,
+    buy_price         varchar(255),
+    count             integer          not null,
+    currency          varchar(255),
+    day_ownership     integer          not null,
+    figi              varchar(255),
+    percent_per_annum double precision not null,
+    profit            double precision not null,
+    sale_date         date,
+    sale_price        varchar(255)
+);

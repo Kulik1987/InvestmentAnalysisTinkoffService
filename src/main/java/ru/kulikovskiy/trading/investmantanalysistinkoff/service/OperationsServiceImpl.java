@@ -1,11 +1,10 @@
 package ru.kulikovskiy.trading.investmantanalysistinkoff.service;
 
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.jetty.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OperationResponse;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OperationDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.CurrencyOperation;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.InstrumentOperation;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
@@ -37,19 +36,19 @@ public class OperationsServiceImpl implements OperationsService {
     private InstrumentOperationsMapper instrumentOperationsMapper;
 
     @Override
-    public OperationResponse getOperationsBetweenDate(String fromDate, String toDate, String token, String brokerType) throws NotFoundException {
+    public OperationDto getOperationsBetweenDate(String fromDate, String toDate, String token, String brokerType) throws NotFoundException {
         String accountId = accountService.getAccountId(token, brokerType);
-        OperationResponse operationResponse = new OperationResponse();
+        OperationDto operationDto = new OperationDto();
         if (StringUtil.isEmpty(accountId)) {
-            operationResponse.setErrorMessage("accountId is empty");
-            return operationResponse;
+            operationDto.setErrorMessage("accountId is empty");
+            return operationDto;
 
         }
         List<Operations> operationsList = investmentTinkoffService.getOperations(fromDate, toDate, accountId, token);
 
         if (operationsList.isEmpty()) {
-            operationResponse.setErrorMessage("operationList is empty");
-            return operationResponse;
+            operationDto.setErrorMessage("operationList is empty");
+            return operationDto;
         }
 
         int countLoad = operationsList.stream().mapToInt(o -> {
@@ -72,7 +71,7 @@ public class OperationsServiceImpl implements OperationsService {
                 return 0;
             }
         }).sum();
-        operationResponse.setCountLoadOperation(countLoad);
-        return operationResponse;
+        operationDto.setCountLoadOperation(countLoad);
+        return operationDto;
     }
 }

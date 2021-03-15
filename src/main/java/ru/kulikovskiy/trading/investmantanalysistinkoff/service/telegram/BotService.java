@@ -14,6 +14,11 @@ import ru.kulikovskiy.trading.investmantanalysistinkoff.config.TelegramConfig;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.handler.MessageHandler;
 
+import java.util.Arrays;
+import java.util.List;
+
+import static ru.kulikovskiy.trading.investmantanalysistinkoff.TelegramConst.*;
+
 /**
  * Main Telegram bot class
  *
@@ -34,14 +39,23 @@ public class BotService extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         Long chatId = update.getMessage().getChatId();
-        String inputText = update.getMessage().getText();
+        List<String> inputText = Arrays.asList(update.getMessage().getText().split(" "));
 
         SendMessage message = new SendMessage();
+
         try {
-            if (inputText.startsWith("/start")) {
+            if (inputText.get(0).equals(START)) {
                 message = messageHandler.startMessage(chatId);
-            } else if (inputText.startsWith("/allAnalyse")) {
-                message = messageHandler.getAllAnalise(chatId);
+            } else if (inputText.get(0).equals(TOKEN)) {
+                message = messageHandler.getToken(chatId, inputText.get(1));
+            } else if (inputText.get(0).equals(ALL)) {
+                message = messageHandler.getAll(chatId);
+            } else if (inputText.get(0).equals(SEPARATE_PAY_IN)) {
+                message = messageHandler.getAllSeparatePayIn(chatId);
+            } else if (inputText.get(0).equals(TICKER_CLOSE_OPERATION)) {
+                message = messageHandler.getTickerCloseOper(chatId, inputText.get(1));
+            } else if (inputText.get(0).equals(ALL_TICKER_CLOSE_OPERATION)) {
+                message = messageHandler.getAllTickerCloseOper(chatId);
             }
             execute(message);
         } catch (NotFoundException e) {

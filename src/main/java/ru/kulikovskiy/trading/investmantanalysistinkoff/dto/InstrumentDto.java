@@ -3,7 +3,10 @@ package ru.kulikovskiy.trading.investmantanalysistinkoff.dto;
 import lombok.Data;
 
 @Data
-public class OperationResponse {
-    int countLoadOperation;
+public class InstrumentDto {
+    int countStock;
+    int countBond;
+    int countEtf;
+    int countCurrency;
     String errorMessage;
 }

@@ -6,15 +6,15 @@ import ru.kulikovskiy.trading.investmantanalysistinkoff.model.ReportInstrument;
 import java.util.List;
 
 @Data
-public class ReportAllDayBreakUpInstrumentResponse {
+public class BreakUpSellInstrumentReportDto {
     private List<ReportInstrument> reportInstrumentList;
     private String errorMessage;
 
-    public ReportAllDayBreakUpInstrumentResponse(List<ReportInstrument> reportInstrumentList) {
+    public BreakUpSellInstrumentReportDto(List<ReportInstrument> reportInstrumentList) {
         this.reportInstrumentList = reportInstrumentList;
     }
 
-    public ReportAllDayBreakUpInstrumentResponse(String errorMessage) {
+    public BreakUpSellInstrumentReportDto(String errorMessage) {
         this.errorMessage = errorMessage;
     }
 }

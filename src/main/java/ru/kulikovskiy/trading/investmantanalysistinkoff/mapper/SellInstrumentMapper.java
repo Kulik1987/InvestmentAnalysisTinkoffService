@@ -10,6 +10,7 @@ public class SellInstrumentMapper {
         SellInstrument sellInstrument = new SellInstrument(instrumentOperation.getId());
         sellInstrument.setEndDate(instrumentOperation.getDateOperation());
         sellInstrument.setQuantitySell(instrumentOperation.getQuantity());
+        sellInstrument.setQuantityTemp(instrumentOperation.getQuantity());
         sellInstrument.setSellCourse(instrumentOperation.getCourse());
         return sellInstrument;
     }
