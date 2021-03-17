@@ -10,13 +10,14 @@ import ru.kulikovskiy.trading.investmantanalysistinkoff.config.TcsBrokerConfig;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AccountTinkoffDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.InstrumentsTinkoffDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OperationsDto;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.Instruments;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Instruments;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AccountDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Operations;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Position;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class InvestmentTinkoffServiceImpl implements InvestmentTinkoffService {
@@ -24,8 +25,6 @@ public class InvestmentTinkoffServiceImpl implements InvestmentTinkoffService {
     private TcsBrokerConfig tcsBrokerConfig;
     @Autowired
     private RestTemplate tcsRestTemplate;
-
-    private final String INTERVAL = "1min";
 
     @Override
     public List<AccountDto>
@@ -35,7 +34,7 @@ public class InvestmentTinkoffServiceImpl implements InvestmentTinkoffService {
         HttpEntity request = createInvestmentTinkoffRequest(token);
 
         ResponseEntity<AccountTinkoffDto> response = tcsRestTemplate.exchange(url, HttpMethod.GET, request, AccountTinkoffDto.class);
-        return response.getBody().getPayload().getAccounts();
+        return Objects.requireNonNull(response.getBody()).getPayload().getAccounts();
     }
 
     @Override
@@ -44,7 +43,7 @@ public class InvestmentTinkoffServiceImpl implements InvestmentTinkoffService {
         HttpEntity request = createInvestmentTinkoffRequest(token);
 
         ResponseEntity<InstrumentsTinkoffDto> response = tcsRestTemplate.exchange(url, HttpMethod.GET, request, InstrumentsTinkoffDto.class);
-        return response.getBody().getPayload().getInstruments();
+        return Objects.requireNonNull(response.getBody()).getPayload().getInstruments();
     }
 
     @Override
@@ -53,7 +52,7 @@ public class InvestmentTinkoffServiceImpl implements InvestmentTinkoffService {
         HttpEntity request = createInvestmentTinkoffRequest(token);
 
         ResponseEntity<InstrumentsTinkoffDto> response = tcsRestTemplate.exchange(url, HttpMethod.GET, request, InstrumentsTinkoffDto.class);
-        return response.getBody().getPayload().getInstruments();
+        return Objects.requireNonNull(response.getBody()).getPayload().getInstruments();
     }
 
     @Override
@@ -62,7 +61,7 @@ public class InvestmentTinkoffServiceImpl implements InvestmentTinkoffService {
         HttpEntity request = createInvestmentTinkoffRequest(token);
 
         ResponseEntity<InstrumentsTinkoffDto> response = tcsRestTemplate.exchange(url, HttpMethod.GET, request, InstrumentsTinkoffDto.class);
-        return response.getBody().getPayload().getInstruments();
+        return Objects.requireNonNull(response.getBody()).getPayload().getInstruments();
     }
 
     @Override
@@ -71,7 +70,7 @@ public class InvestmentTinkoffServiceImpl implements InvestmentTinkoffService {
         HttpEntity request = createInvestmentTinkoffRequest(token);
 
         ResponseEntity<InstrumentsTinkoffDto> response = tcsRestTemplate.exchange(url, HttpMethod.GET, request, InstrumentsTinkoffDto.class);
-        return response.getBody().getPayload().getInstruments();
+        return Objects.requireNonNull(response.getBody()).getPayload().getInstruments();
     }
 
     @Override
@@ -81,7 +80,17 @@ public class InvestmentTinkoffServiceImpl implements InvestmentTinkoffService {
         HttpEntity request = createInvestmentTinkoffRequest(token);
 
         ResponseEntity<OperationsDto> responseEntity = tcsRestTemplate.exchange(url, HttpMethod.GET, request, OperationsDto.class);
-        return responseEntity.getBody().getPayload().getOperations();
+        return Objects.requireNonNull(responseEntity.getBody()).getPayload().getOperations();
+    }
+
+    @Override
+    public List<Operations> getOperationsByFigi(String from, String to, String brokerAccountId, String token, String figi) {
+        String url = UriComponentsBuilder.newInstance().uri(URI.create(tcsBrokerConfig.getUrl())).path("/operations")
+                .queryParam("from", from).queryParam("figi", figi).queryParam("to", to).queryParam("brokerAccountId", brokerAccountId).toUriString();
+        HttpEntity request = createInvestmentTinkoffRequest(token);
+
+        ResponseEntity<OperationsDto> responseEntity = tcsRestTemplate.exchange(url, HttpMethod.GET, request, OperationsDto.class);
+        return Objects.requireNonNull(responseEntity.getBody()).getPayload().getOperations();
     }
 
     @Override
@@ -92,21 +101,6 @@ public class InvestmentTinkoffServiceImpl implements InvestmentTinkoffService {
         ResponseEntity<OperationsDto> responseEntity = tcsRestTemplate.exchange(url, HttpMethod.GET, request, OperationsDto.class);
 
         return responseEntity.getBody().getPayload().getPositions();
-    }
-
-
-    @Override
-    public double getCandles(String figi, String token, String from, String to) {
-        String url = UriComponentsBuilder.newInstance().uri(URI.create(tcsBrokerConfig.getUrl())).path("/market").path("/candles")
-                .queryParam("figi", figi).queryParam("from", from).queryParam("to", to).queryParam("interval", INTERVAL).toUriString();
-        HttpEntity request = createInvestmentTinkoffRequest(token);
-
-        ResponseEntity<OperationsDto> responseEntity = tcsRestTemplate.exchange(url, HttpMethod.GET, request, OperationsDto.class);
-        if (responseEntity.getBody().getPayload().getCandles() == null || responseEntity.getBody().getPayload().getCandles().size() == 0) {
-            return 0;
-        } else {
-            return responseEntity.getBody().getPayload().getCandles().get(0).getC();
-        }
     }
 
     @NotNull

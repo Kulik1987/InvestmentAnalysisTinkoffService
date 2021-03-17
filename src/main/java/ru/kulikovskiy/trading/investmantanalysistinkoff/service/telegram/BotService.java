@@ -54,8 +54,6 @@ public class BotService extends TelegramLongPollingBot {
                 message = messageHandler.getAllSeparatePayIn(chatId);
             } else if (inputText.get(0).equals(TICKER_CLOSE_OPERATION)) {
                 message = messageHandler.getTickerCloseOper(chatId, inputText.get(1));
-            } else if (inputText.get(0).equals(ALL_TICKER_CLOSE_OPERATION)) {
-                message = messageHandler.getAllTickerCloseOper(chatId);
             }
             execute(message);
         } catch (NotFoundException e) {

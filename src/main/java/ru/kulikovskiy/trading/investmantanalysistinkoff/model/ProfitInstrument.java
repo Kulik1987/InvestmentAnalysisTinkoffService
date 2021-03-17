@@ -1,4 +1,4 @@
-package ru.kulikovskiy.trading.investmantanalysistinkoff.entity;
+package ru.kulikovskiy.trading.investmantanalysistinkoff.model;
 
 import lombok.Data;
 
@@ -6,8 +6,6 @@ import javax.persistence.*;
 import java.time.LocalDate;
 
 @Data
-@Entity
-@Table(name = "profit_instrument", schema ="investment")
 public class ProfitInstrument {
     @Id
     @SequenceGenerator(name = "profit_instrument_id", sequenceName = "profit_instrument_id_seq", allocationSize = 1)

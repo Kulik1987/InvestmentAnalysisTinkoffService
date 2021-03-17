@@ -12,8 +12,4 @@ public class OneTickerCloseOperationReportDto {
     public OneTickerCloseOperationReportDto(ReportInstrument reportInstrument) {
         this.reportInstrument = reportInstrument;
     }
-
-    public OneTickerCloseOperationReportDto(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
 }

@@ -1,30 +1,32 @@
 package ru.kulikovskiy.trading.investmantanalysistinkoff.handler;
 
+import com.hazelcast.core.HazelcastInstance;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.config.ClientConfig;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AllMoneyReportDto;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AllTickerCloseOperationReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OneTickerCloseOperationReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AccountService;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AnalyzePortfolioService;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+import static ru.kulikovskiy.trading.HazelcastConst.TOKENS;
 import static ru.kulikovskiy.trading.Util.checkEmptyToken;
 import static ru.kulikovskiy.trading.investmantanalysistinkoff.TelegramConst.*;
 
 @Service
 public class
 MessageHandlerImpl implements MessageHandler {
-    String BROKER_TYPE = "TinkoffIis";
+
     @Autowired
     private AnalyzePortfolioService analyzePortfolioService;
     @Autowired
-    private ClientConfig clientConfig;
+    private AccountService accountService;
+    @Qualifier("hazelcastInstance")
+    @Autowired
+    private HazelcastInstance hazelcastInstance;
 
     @Override
     public SendMessage startMessage(Long chatId) {
@@ -37,7 +39,7 @@ MessageHandlerImpl implements MessageHandler {
     @Override
     public SendMessage getToken(Long chatId, String token) throws NotFoundException {
         checkEmptyToken(token);
-        clientConfig.setToken(token);
+        accountService.saveToken(token, String.valueOf(chatId));
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Token add successful");
@@ -47,21 +49,21 @@ MessageHandlerImpl implements MessageHandler {
 
     @Override
     public SendMessage getAllSeparatePayIn(Long chatId) throws NotFoundException {
-        String token = clientConfig.getToken();
+        String token = getToken(chatId);
         checkEmptyToken(token);
-        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrumentSeparatePayIn(token, BROKER_TYPE);
+        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrumentSeparatePayIn(token);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText(TITLE_AVG + getText(response));
+        message.setText(TITLE_AVG + getTextSeparatePayIn(response));
         return message;
     }
 
     @Override
     public SendMessage getTickerCloseOper(Long chatId, String ticker) throws NotFoundException {
-        String token = clientConfig.getToken();
+        String token = getToken(chatId);
         checkEmptyToken(token);
-        OneTickerCloseOperationReportDto response = analyzePortfolioService.getReportAllDayByTickerCloseOperation(token, BROKER_TYPE, ticker);
+        OneTickerCloseOperationReportDto response = analyzePortfolioService.getReportAllDayByTickerCloseOperation(token, ticker);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
@@ -70,47 +72,38 @@ MessageHandlerImpl implements MessageHandler {
     }
 
     @Override
-    public SendMessage getAllTickerCloseOper(Long chatId) throws NotFoundException {
-        String token = clientConfig.getToken();
-        checkEmptyToken(token);
-        AllTickerCloseOperationReportDto response = analyzePortfolioService.getAllTickerCloseOperationReportDto(token, BROKER_TYPE);
-
-        SendMessage message = new SendMessage();
-        message.setChatId(chatId);
-        message.setText(ALL_TICKER + getTextAllTicker(response));
-        return message;
-    }
-
-    @Override
     public SendMessage getAll(Long chatId) throws NotFoundException {
-        String token = clientConfig.getToken();
+        String token = getToken(chatId);
         checkEmptyToken(token);
-        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrument(token, BROKER_TYPE);
+        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrument(token);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText(TITLE + getText(response));
+        message.setText(TITLE + getTextAllPayIn(response));
         return message;
     }
 
     @NotNull
-    private String getTextAllTicker(AllTickerCloseOperationReportDto response) {
-
-        List<String> texts = response.getReportInstrument().stream().map(i -> NAME + i.getNameInstrument() + "\n" +
-                PERIOD_AVG_ALL + i.getAverageCountDay() + "\n" +
-                PROFIT_AVG_ALL + i.getAverageProfit() + "\n" +
-                PERCENT_ALL + i.getAveragePercentProfit()+ "\n"+ "\n").collect(Collectors.toList());
-        String text = "Общий доход: " + response.getAllSumProfit() + "\n" + texts.stream().collect(Collectors.joining());
-        return text;
-    }
-
-    @NotNull
-    private String getText(AllMoneyReportDto response) {
+    private String getTextAllPayIn(AllMoneyReportDto response) {
         String text =
                 START_DATE + response.getReportInstrument().getStartDate() + "\n" +
                         END_DATE + response.getReportInstrument().getEndDdate() + "\n" +
                         PERIOD + response.getReportInstrument().getPeriod() + "\n" +
-                        PERIOD_AVG + response.getReportInstrument().getPeriodAvg() + "\n" +
+                        PAY_IN + response.getReportInstrument().getPayInAll() + "\n" +
+                        PAY_OUT + response.getReportInstrument().getPayOutAll() + "\n" +
+                        COMMISSION_ALL + response.getReportInstrument().getPayOutAll() + "\n" +
+                        CURRENT_SUM + response.getReportInstrument().getCurrentSum() + "\n" +
+                        PERCENT + response.getReportInstrument().getPercentProfit() + "\n" +
+                        PERCENT_YEAR + response.getReportInstrument().getPercentProfitYear();
+        return text;
+    }
+    @NotNull
+    private String getTextSeparatePayIn(AllMoneyReportDto response) {
+        String text =
+                START_DATE + response.getReportInstrument().getStartDate() + "\n" +
+                        END_DATE + response.getReportInstrument().getEndDdate() + "\n" +
+                        PERIOD + response.getReportInstrument().getPeriod() + "\n" +
+                        PERIOD_AVG_ALL + response.getReportInstrument().getPeriodAvg() + "\n" +
                         PAY_IN + response.getReportInstrument().getPayInAll() + "\n" +
                         PAY_OUT + response.getReportInstrument().getPayOutAll() + "\n" +
                         CURRENT_SUM + response.getReportInstrument().getCurrentSum() + "\n" +
@@ -124,9 +117,16 @@ MessageHandlerImpl implements MessageHandler {
         String text =
                 TICKER + response.getReportInstrument().getFigi() + "\n" +
                         NAME + response.getReportInstrument().getNameInstrument() + "\n" +
+                        QUANTITY + response.getReportInstrument().getQuantityAll() + "\n" +
                         PERIOD_AVG + response.getReportInstrument().getAverageCountDay() + "\n" +
                         PROFIT_AVG + response.getReportInstrument().getAverageProfit() + "\n" +
-                        PERCENT + response.getReportInstrument().getAveragePercentProfit();
+                        PERCENT_AVG_TICKER + response.getReportInstrument().getAveragePercentProfit();
         return text;
+    }
+
+    private String getToken(Long chatId) throws NotFoundException {
+        String token = (String) hazelcastInstance.getMap(TOKENS).get(String.valueOf(chatId));
+        checkEmptyToken(token);
+        return token;
     }
 }

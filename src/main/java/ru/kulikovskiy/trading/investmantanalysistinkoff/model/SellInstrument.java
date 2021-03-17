@@ -3,7 +3,6 @@ package ru.kulikovskiy.trading.investmantanalysistinkoff.model;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 @Data
 public class SellInstrument {

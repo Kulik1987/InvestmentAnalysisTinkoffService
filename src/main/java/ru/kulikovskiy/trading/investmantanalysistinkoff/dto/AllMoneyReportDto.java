@@ -8,10 +8,6 @@ public class AllMoneyReportDto {
     private PercentageInstrument reportInstrument;
     private String errorMessage;
 
-    public AllMoneyReportDto(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
-
     public AllMoneyReportDto(PercentageInstrument reportInstrument) {
         this.reportInstrument = reportInstrument;
     }

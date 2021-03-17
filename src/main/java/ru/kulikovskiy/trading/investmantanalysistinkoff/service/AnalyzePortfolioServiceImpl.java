@@ -1,40 +1,34 @@
 package ru.kulikovskiy.trading.investmantanalysistinkoff.service;
 
-import groovy.transform.AutoImplement;
-import org.eclipse.jetty.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AllMoneyReportDto;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AllTickerCloseOperationReportDto;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OneTickerCloseOperationReportDto;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.CurrencyOperation;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.InstrumentOperation;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.Instruments;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.*;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.CurrencyOperation;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.InstrumentOperation;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Instruments;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.mapper.BuyInstrumentMapper;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.mapper.SellInstrumentMapper;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.*;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.enums.OperationType;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.enums.StatusType;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.repository.CurrencyOperationRepository;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.repository.InstrumentOperationRepository;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.repository.InstrumentsRepository;
 
-import javax.persistence.criteria.CriteriaBuilder;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.time.temporal.ChronoUnit.DAYS;
 import static ru.kulikovskiy.trading.DateUtil.getStringFromLocalDateTime;
 
 @Service
 public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
-    @Autowired
-    private InstrumentOperationRepository instrumentOperationRepository;
-    @Autowired
-    private CurrencyOperationRepository currencyOperationRepository;
+    private static final String ALL_PAY_IN = "allPayIn";
+    private static final String ALL_PAY_IN_SEPARATE = "allPayInSeparate";
+    String BROKER_TYPE = "TinkoffIis";
     @Autowired
     private InvestmentTinkoffService investmentTinkoffService;
     @Autowired
@@ -42,124 +36,110 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
     @Autowired
     private SellInstrumentMapper sellInstrumentMapper;
     @Autowired
-    private AccountService accountService;
-    @Autowired
     private OperationsService operationsService;
-    @Autowired
-    private InstrumentsRepository instrumentsRepository;
 
     private final String FIGI_USD = "BBG0013HGFT4";
+    private final String FIGI_EUR = "BBG0013HJJ31";
 
     @Override
-    public AllMoneyReportDto getReportAllDayAllInstrument(String token, String brokerType) throws NotFoundException {
-        String accountId = getAccount(token, brokerType);
+    public AllMoneyReportDto getReportAllDayAllInstrument(String token) throws NotFoundException {
+        String accountId = getAccountId(token);
 
         Period period = getPeriodDateAll();
-        LocalDateTime maxDate = period.getEndDate();
-        LocalDateTime minDate = period.getStartDate();
-        long dayOpenPortfolio = period.getDayOpen();
+        OperationDto operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
 
-        getNewOperations(token, brokerType, maxDate, minDate);
-        List<CurrencyOperation> currencyOperations = getCurrencyOperations();
+        List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
 
-        double payInRub = getPayInRub(currencyOperations);
-        double payOutRub = getPayOutRub(currencyOperations);
-        double comissionAll = getCommissionAll(currencyOperations);
 
-        List<Position> positionList = getPositionList(accountId, token);
-        final double[] sumRubPortfolio = {0};
-        final double[] sumUsdPortfolio = {0};
-
-        double allSumRubPortfolio = getAllSumRubPortfolio(positionList, sumRubPortfolio, sumUsdPortfolio);
-        double percentProfit = getPercentProfit(payInRub, allSumRubPortfolio);
-        double percentProfitYear = getPercentProfitYear(dayOpenPortfolio, payInRub, allSumRubPortfolio);
-
-        return new AllMoneyReportDto(new PercentageInstrument(minDate.toLocalDate(), maxDate.toLocalDate(), String.valueOf(dayOpenPortfolio), String.valueOf(dayOpenPortfolio), payInRub, payOutRub, comissionAll, Math.round(allSumRubPortfolio * 100d) / 100d, String.valueOf(Math.round(percentProfit * 100d) / 100d) + "%", String.valueOf(Math.round(percentProfitYear * 100d) / 100d) + "%"));
+        PercentageInstrument percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN);
+        return new AllMoneyReportDto(percentageInstrument);
     }
 
     @Override
-    public AllMoneyReportDto getReportAllDayAllInstrumentSeparatePayIn(String token, String brokerType) throws NotFoundException {
-        String accountId = getAccount(token, brokerType);
+    public AllMoneyReportDto getReportAllDayAllInstrumentSeparatePayIn(String token) throws NotFoundException {
+        String accountId = getAccountId(token);
 
         Period period = getPeriodDateAll();
-        LocalDateTime maxDate = period.getEndDate();
-        LocalDateTime minDate = period.getStartDate();
-        long dayOpen = period.getDayOpen();
+        OperationDto operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
 
-        getNewOperations(token, accountId, maxDate, minDate);
+        List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
 
-        List<CurrencyOperation> currencyOperations = getCurrencyOperations();
-
-        double payInRub = getPayInRub(currencyOperations);
-        double payOutRub = getPayOutRub(currencyOperations);
-        double comissionAll = getCommissionAll(currencyOperations);
-
-        List<Position> positionList = getPositionList(accountId, token);
-        final double[] sumRubPortfolio = {0};
-        final double[] sumUsdPortfolio = {0};
-
-        double allSumRubPortfolio = getAllSumRubPortfolio(positionList, sumRubPortfolio, sumUsdPortfolio);
-        double percentProfit = getPercentProfit(payInRub, allSumRubPortfolio);
-        double dayOpenPortfolioAvg = getDayOpenPortfolioAvg(currencyOperations, payInRub);
-        double percentProfitYear = getPercentProfitYear(payInRub, allSumRubPortfolio, dayOpenPortfolioAvg);
-
-        return new AllMoneyReportDto(new PercentageInstrument(minDate.toLocalDate(), maxDate.toLocalDate(), String.valueOf(dayOpen), String.valueOf(Math.round(dayOpenPortfolioAvg)), payInRub, payOutRub, comissionAll, Math.round(allSumRubPortfolio * 100d) / 100d, Math.round(percentProfit * 100d) / 100d + "%", String.valueOf(Math.round(percentProfitYear * 100d) / 100d) + "%"));
+        PercentageInstrument percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN_SEPARATE);
+        return new AllMoneyReportDto(percentageInstrument);
     }
 
     @Override
-    public OneTickerCloseOperationReportDto getReportAllDayByTickerCloseOperation(String token, String brokerType, String ticker) throws NotFoundException {
-        String accountId = getAccount(token, brokerType);
-
+    public OneTickerCloseOperationReportDto getReportAllDayByTickerCloseOperation(String token, String ticker) throws NotFoundException {
+        String accountId = getAccountId(token);
         Period period = getPeriodDateAll();
-        LocalDateTime maxDate = period.getEndDate();
-        LocalDateTime minDate = period.getStartDate();
 
-        getNewOperations(token, accountId, maxDate, minDate);
+        FigiNameDto figiNameDto = getNameInstrumentByFigi(ticker, token);
+        OperationDto operationDto = getOperationsByFigi(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId, figiNameDto.getFigi());
+        List<InstrumentOperation> instrumentOperationList = operationDto.getInstrumentOperationList();
 
-        List<InstrumentOperationByTicker> instrumentOperationByTickers = getInstrumentOperationByTickers(ticker);
-        String figi = instrumentOperationByTickers.get(0).getFigi();
-        String name = instrumentOperationByTickers.get(0).getName();
-
-        List<InstrumentOperation> instrumentOperationList = instrumentOperationByTickers.stream().map(iot -> iot.getInstrumentOperation()).collect(Collectors.toList());
         List<SellInstrument> sellInstruments = getSellInstruments(instrumentOperationList, ticker);
         List<BuyInstrument> buyInstruments = getBuyOperationByFigi(instrumentOperationList);
 
-        TradeInstrument tradeInstrument = getTradeInstrument(figi, name, sellInstruments, buyInstruments);
+        TradeInstrument tradeInstrument = getTradeInstrument(figiNameDto.getFigi(), figiNameDto.getName(), sellInstruments, buyInstruments);
 
-        ReportInstrument reportInstrument = setPercantageByInstrument(tradeInstrument.getSellInstrument(), tradeInstrument.getFigi(), tradeInstrument.getName());
+        ReportInstrument reportInstrument = setPercantageByInstrument(tradeInstrument.getSellInstrument(), ticker, tradeInstrument.getName());
         return new OneTickerCloseOperationReportDto(reportInstrument);
     }
 
-    @Override
-    public AllTickerCloseOperationReportDto getAllTickerCloseOperationReportDto(String token, String brokerType) throws NotFoundException {
-        String accountId = getAccount(token, brokerType);
+    private OperationDto getOperationsByFigi(String token, String brokerType, @NotNull LocalDateTime
+            maxDate, @NotNull LocalDateTime minDate, @NotNull String accountId, String figi) throws NotFoundException {
+        String startPeriod = getStringFromLocalDateTime(minDate);
+        String endPeriod = getStringFromLocalDateTime(maxDate);
+        return operationsService.getOperationsBetweenDateByFigi(startPeriod, endPeriod, token, brokerType, accountId, figi);
+    }
 
-        Period period = getPeriodDateAll();
-        LocalDateTime maxDate = period.getEndDate();
-        LocalDateTime minDate = period.getStartDate();
-
-        getNewOperations(token, accountId, maxDate, minDate);
-
-        List<Instruments> instruments = instrumentsRepository.getInstrument("Currency");
-        List<ReportInstrument> reportInstruments = instruments.stream().map(i -> {
-            List<InstrumentOperationByTicker> instrumentOperationByTickers = instrumentOperationRepository.findInstrumentsByTicker(i.getTicker());
-            List<InstrumentOperation> instrumentOperationList = instrumentOperationByTickers.stream().map(iot -> iot.getInstrumentOperation()).collect(Collectors.toList());
-            List<SellInstrument> sellInstruments = null;
-            try {
-                sellInstruments = getSellInstruments(instrumentOperationList, i.getTicker());
-            } catch (NotFoundException e) {
-                e.printStackTrace();
+    private FigiNameDto getNameInstrumentByFigi(String ticker, String token) {
+        List<Instruments> instruments = investmentTinkoffService.getStocks(token);
+        Instruments instrument = instruments.stream().filter(i -> ticker.equals(i.getTicker())).findFirst().get();
+        if (instrument == null) {
+            instruments = investmentTinkoffService.getBonds(token);
+            instrument = instruments.stream().filter(i -> ticker.equals(i.getTicker())).findFirst().get();
+            if (instrument == null) {
+                instruments = investmentTinkoffService.getEtfs(token);
+                instrument = instruments.stream().filter(i -> ticker.equals(i.getTicker())).findFirst().get();
+                if (instrument == null) {
+                    instruments = investmentTinkoffService.getCurrencies(token);
+                    instrument = instruments.stream().filter(i -> ticker.equals(i.getTicker())).findFirst().get();
+                }
             }
-            List<BuyInstrument> buyInstruments = getBuyOperationByFigi(instrumentOperationList);
+        }
+        return new FigiNameDto(instrument.getFigi(), instrument.getName());
+    }
 
-            TradeInstrument tradeInstrument = getTradeInstrument(i.getFigi(), i.getName(), sellInstruments, buyInstruments);
+    @NotNull
+    private PercentageInstrument getPercentageInstrument(String token, String accountId, Period
+            period, List<CurrencyOperation> currencyOperations, String reportType) throws NotFoundException {
+        int payInRub = (int) getPayInRub(currencyOperations);
+        int payOutRub = (int) getPayOutRub(currencyOperations);
+        double comissionAll = getCommissionAll(currencyOperations);
 
-            return setPercantageByInstrument(tradeInstrument.getSellInstrument(), tradeInstrument.getFigi(), tradeInstrument.getName());
-        }).collect(Collectors.toList());
-        double allSumProfit = reportInstruments.stream().mapToDouble(i -> i.getQuantityAll()*Double.valueOf(i.getAverageProfit())).sum();
-        AllTickerCloseOperationReportDto allTickerCloseOperationReportDto = new AllTickerCloseOperationReportDto(reportInstruments, String.valueOf(allSumProfit))
-                ;
-        return allTickerCloseOperationReportDto;
+        List<Position> positionList = getPositionList(accountId, token);
+        final double[] sumRubPortfolio = {0};
+        final double[] sumUsdPortfolio = {0};
+        final double[] sumEurPortfolio = {0};
+
+        double allSumRubPortfolio = getAllSumRubPortfolio(positionList, sumRubPortfolio, sumUsdPortfolio, sumEurPortfolio);
+        double percentProfit = getPercentProfit(payInRub, allSumRubPortfolio);
+        int avgDayMoneyOnAccount = 0;
+        int dayOpenPortfolio = (int) DAYS.between(currencyOperations.get(currencyOperations.size() - 1).getDateOperation().toLocalDate(), LocalDate.now());
+
+        if (ALL_PAY_IN_SEPARATE.equals(reportType)) {
+            avgDayMoneyOnAccount = (int) getDayOpenPortfolioAvg(currencyOperations, payInRub);
+        }
+        double percentProfitYear = getPercentProfitYear(payInRub, allSumRubPortfolio, dayOpenPortfolio);
+
+        PercentageInstrument percentageInstrument = new PercentageInstrument(period.getStartDate().toLocalDate(), period.getEndDate().toLocalDate(), String.valueOf(dayOpenPortfolio), String.valueOf(avgDayMoneyOnAccount), payInRub, payOutRub, comissionAll, Math.round(allSumRubPortfolio * 100d) / 100d, String.valueOf(Math.round(percentProfit * 100d) / 100d) + "%", String.valueOf(Math.round(percentProfitYear * 100d) / 100d) + "%");
+        return percentageInstrument;
+    }
+
+    private String getAccountId(String token) {
+        List<AccountDto> accounts = investmentTinkoffService.getAccounts(token);
+        return accounts.stream().filter(a -> BROKER_TYPE.equals(a.getBrokerAccountType())).findFirst().get().getBrokerAccountId();
     }
 
     @NotNull
@@ -174,20 +154,13 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return tradeInstrument;
     }
 
-    private List<SellInstrument> getSellInstruments(List<InstrumentOperation> instrumentOperationList, String ticker) throws NotFoundException {
+    private List<SellInstrument> getSellInstruments(List<InstrumentOperation> instrumentOperationList, String
+            ticker) throws NotFoundException {
         List<SellInstrument> sellInstruments = getSellOperationByFigi(instrumentOperationList);
         if (sellInstruments.isEmpty()) {
             throw new NotFoundException("Sell operation for ticker= " + ticker + " is not found ");
         }
         return sellInstruments;
-    }
-
-    private List<InstrumentOperationByTicker> getInstrumentOperationByTickers(String ticker) throws NotFoundException {
-        List<InstrumentOperationByTicker> instrumentOperationByTickers = instrumentOperationRepository.findInstrumentsByTicker(ticker);
-        if ((instrumentOperationByTickers == null) || (instrumentOperationByTickers.stream().count() == 0)) {
-            throw new NotFoundException("instrument for ticker= " + ticker + ", is not found or operation for this ticker is not found");
-        }
-        return instrumentOperationByTickers;
     }
 
     private double getPercentProfitYear(double payInRub, double allSumRubPortfolio, double dayOpenPortfolioAvg) {
@@ -196,29 +169,9 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
 
     private double getDayOpenPortfolioAvg(List<CurrencyOperation> currencyOperations, double payInRub) {
         return currencyOperations.stream().filter(co -> OperationType.PAY_IN.getDescription().equals(co.getOperationType())).mapToDouble(o -> {
-            long days = ChronoUnit.DAYS.between(o.getDateOperation(), LocalDateTime.now());
+            long days = DAYS.between(o.getDateOperation(), LocalDateTime.now());
             return days * o.getPayment() / payInRub;
         }).sum();
-    }
-
-    private List<CurrencyOperation> getCurrencyOperations() throws NotFoundException {
-        Iterable<CurrencyOperation> currencyOperationIterable = currencyOperationRepository.findAll();
-        if (currencyOperationIterable == null) {
-            throw new NotFoundException("operation not found between this date");
-        }
-        List<CurrencyOperation> currencyOperations = new ArrayList<>();
-        currencyOperationIterable.forEach(currencyOperations::add);
-        return currencyOperations;
-    }
-
-    private List<Instruments> getInstruments() throws NotFoundException {
-        Iterable<Instruments> instruments = instrumentsRepository.findAll();
-        if (instruments == null) {
-            throw new NotFoundException("operation not found between this date");
-        }
-        List<Instruments> instrumentsResponse = new ArrayList<>();
-        instruments.forEach(instrumentsResponse::add);
-        return instrumentsResponse;
     }
 
     private double getPayInRub(List<CurrencyOperation> currencyOperations) {
@@ -246,35 +199,22 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
                 .map(sellInstrumentMapper::getSellInstrumentFromOperationInstrument).collect(Collectors.toList());
     }
 
-    private String getAccount(String token, String brokerType) throws NotFoundException {
-        String accountId = accountService.getAccountId(token, brokerType);
-        if (StringUtil.isEmpty(accountId)) {
-            throw new NotFoundException("account is empty");
-        }
-        return accountId;
-    }
-
     private Period getPeriodDateAll() {
         Period period = new Period();
-        LocalDateTime minDate = instrumentOperationRepository.getMinDate();
+        LocalDateTime minDate = LocalDateTime.now().minusYears(5);
         LocalDateTime maxDate = LocalDateTime.now();
 
         period.setStartDate(minDate);
         period.setEndDate(maxDate);
-        period.setDayOpen(ChronoUnit.DAYS.between(minDate, maxDate));
+        period.setDayOpen(DAYS.between(minDate, maxDate));
         return period;
     }
 
-    private void getNewOperations(String token, String brokerType, LocalDateTime maxDate, LocalDateTime minDate) {
-        if (maxDate.toLocalDate().isBefore(LocalDate.now())) {
-            String startPeriod = getStringFromLocalDateTime(maxDate);
-            String endPeriod = getStringFromLocalDateTime(minDate);
-            try {
-                operationsService.getOperationsBetweenDate(startPeriod, endPeriod, token, brokerType);
-            } catch (NotFoundException e) {
-                e.printStackTrace();
-            }
-        }
+    private OperationDto getOperations(String token, String brokerType, @NotNull LocalDateTime
+            maxDate, @NotNull LocalDateTime minDate, @NotNull String accountId) throws NotFoundException {
+        String startPeriod = getStringFromLocalDateTime(minDate);
+        String endPeriod = getStringFromLocalDateTime(maxDate);
+        return operationsService.getOperationsBetweenDate(startPeriod, endPeriod, token, brokerType, accountId);
     }
 
     private double getCurrentRateInstrument(Position position) {
@@ -285,7 +225,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return position.getAveragePositionPrice().getValue() * position.getBalance() + position.getExpectedYield().getValue();
     }
 
-    private ReportInstrument setPercantageByInstrument(List<SellInstrumentPercentage> sellInstrument, String figi, String name) {
+    private ReportInstrument setPercantageByInstrument(List<SellInstrumentPercentage> sellInstrument, String ticker, String name) {
         int quantityAll = sellInstrument.stream()
                 .mapToInt(si -> si.getQuantitySell()).sum();
         double averageCountDay = sellInstrument.stream()
@@ -298,7 +238,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
                 .mapToDouble(si -> si.getPercentProfitYear() * si.getQuantitySell() / quantityAll).sum();
 
         ReportInstrument reportInstrument = new ReportInstrument();
-        reportInstrument.setFigi(figi);
+        reportInstrument.setFigi(ticker);
         reportInstrument.setQuantityAll(quantityAll);
         reportInstrument.setNameInstrument(name);
         reportInstrument.setAverageCountDay(String.valueOf(Math.round(averageCountDay)));
@@ -308,7 +248,8 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return reportInstrument;
     }
 
-    private List<SellInstrumentPercentage> getPercantageList(List<BuyInstrument> buyInstruments, List<SellInstrument> sellInstrumentList) {
+    private List<SellInstrumentPercentage> getPercantageList
+            (List<BuyInstrument> buyInstruments, List<SellInstrument> sellInstrumentList) {
         List<SellInstrumentPercentage> sellInstrumentsPercent = new ArrayList<>();
         sellInstrumentList.stream().sorted(Comparator.comparing(SellInstrument::getEndDate)).forEach(sim -> {
             int version = 0;
@@ -350,14 +291,15 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return sellInstrumentsPercent;
     }
 
-    private SellInstrumentPercentage getPercantage(SellInstrument sellInstrument, BuyInstrument buyInstrument, int version) {
+    private SellInstrumentPercentage getPercantage(SellInstrument sellInstrument, BuyInstrument buyInstrument,
+                                                   int version) {
         SellInstrumentPercentage sellInstrumentPercentage = new SellInstrumentPercentage(sellInstrument.getId());
         sellInstrumentPercentage.setQuantitySell(sellInstrument.getQuantitySell());
         sellInstrumentPercentage.setEndDate(sellInstrument.getEndDate());
         sellInstrumentPercentage.setCountDay(sellInstrument.getCountDay());
         sellInstrumentPercentage.setSellCourse(sellInstrument.getSellCourse());
 
-        int betweenDay = (int) ChronoUnit.DAYS.between(buyInstrument.getStartDate(), sellInstrumentPercentage.getEndDate());
+        int betweenDay = (int) DAYS.between(buyInstrument.getStartDate(), sellInstrumentPercentage.getEndDate());
         if (betweenDay == 0) {
             sellInstrumentPercentage.setCountDay(1);
         } else {
@@ -372,31 +314,28 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return sellInstrumentPercentage;
     }
 
-    private double getPercentProfitYear(long dayOpenPortfolio, double payInRub, double allSumRubPortfolio) {
-        return (allSumRubPortfolio / payInRub - 1) * 100 * 365 / dayOpenPortfolio;
-    }
-
     private double getPercentProfit(double payInRub, double allSumRubPortfolio) {
         return (allSumRubPortfolio / payInRub - 1) * 100;
     }
 
-    private double getAllSumRubPortfolio(List<Position> positionList, double[] sumRubPortfolio, double[] sumUsdPortfolio) {
+    private double getAllSumRubPortfolio(List<Position> positionList, double[] sumRubPortfolio,
+                                         double[] sumUsdPortfolio, double[] sumEurPortfolio) {
         double allSumRubPortfolio;
         Position positionUsd = positionList.stream().filter(position -> FIGI_USD.equals(position.getFigi())).findFirst().orElse(null);
-        if (positionUsd == null) {
-            positionList.forEach(p -> sumRubPortfolio[0] += getCurrentSumInstrument(p));
-            allSumRubPortfolio = sumRubPortfolio[0];
-        } else {
-            double rateUsd = getCurrentRateInstrument(positionUsd);
-            positionList.forEach(p -> {
-                if ("USD".equals(p.getAveragePositionPrice().getCurrency())) {
-                    sumUsdPortfolio[0] += getCurrentSumInstrument(p);
-                } else if ("RUB".equals(p.getAveragePositionPrice().getCurrency())) {
-                    sumRubPortfolio[0] += getCurrentSumInstrument(p);
-                }
-            });
-            allSumRubPortfolio = sumRubPortfolio[0] + sumUsdPortfolio[0] * rateUsd;
-        }
+        Position positionEur = positionList.stream().filter(position -> FIGI_EUR.equals(position.getFigi())).findFirst().orElse(null);
+
+        double rateUsd = getCurrentRateInstrument(positionUsd);
+        double rateEur = getCurrentRateInstrument(positionEur);
+        positionList.forEach(p -> {
+            if ("USD".equals(p.getAveragePositionPrice().getCurrency())) {
+                sumUsdPortfolio[0] += getCurrentSumInstrument(p);
+            } else if ("RUB".equals(p.getAveragePositionPrice().getCurrency())) {
+                sumRubPortfolio[0] += getCurrentSumInstrument(p);
+            } else if ("EUR".equals(p.getAveragePositionPrice().getCurrency())) {
+                sumEurPortfolio[0] += getCurrentSumInstrument(p);
+            }
+        });
+        allSumRubPortfolio = sumRubPortfolio[0] + sumUsdPortfolio[0] * rateUsd + sumEurPortfolio[0] * rateEur;
         return allSumRubPortfolio;
     }
 

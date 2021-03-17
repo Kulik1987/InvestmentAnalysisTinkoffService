@@ -2,8 +2,10 @@ package ru.kulikovskiy.trading.investmantanalysistinkoff.mapper;
 
 import org.springframework.stereotype.Component;
 import ru.kulikovskiy.trading.DateUtil;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.InstrumentOperation;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.InstrumentOperation;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Operations;
+
+import java.util.Optional;
 
 import static java.util.Optional.ofNullable;
 
@@ -20,10 +22,10 @@ public class InstrumentOperationsMapper {
 
         if (operations.getCommission() != null) {
             ofNullable(operations.getCommission().getCurrency()).ifPresent(instrumentOperation::setCommissionCurrency);
-            ofNullable(operations.getCommission().getValue()).ifPresent(instrumentOperation::setCommissionValue);
+            Optional.of(operations.getCommission().getValue()).ifPresent(instrumentOperation::setCommissionValue);
         }
 
-        ofNullable(operations.getPrice()).ifPresent(instrumentOperation::setCourse);
+        Optional.of(operations.getPrice()).ifPresent(instrumentOperation::setCourse);
         ofNullable(operations.getStatus()).ifPresent(instrumentOperation::setStatus);
         ofNullable(operations.getFigi()).ifPresent(instrumentOperation::setFigi);
         return instrumentOperation;

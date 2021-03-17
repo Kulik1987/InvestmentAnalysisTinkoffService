@@ -1,7 +1,7 @@
 package ru.kulikovskiy.trading.investmantanalysistinkoff.dto;
 
 import lombok.Data;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.Instruments;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Instruments;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Candles;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Operations;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Position;

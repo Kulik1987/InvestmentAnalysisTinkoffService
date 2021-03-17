@@ -4,7 +4,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @Data
@@ -15,10 +14,6 @@ public class TradeInstrument {
     private List<BuyInstrument> buyInstruments;
     private List<SellInstrumentPercentage> sellInstrument;
     private Dividend dividend;
-
-    public TradeInstrument(String figi) {
-        this.figi = figi;
-    }
 
     @Override
     public boolean equals(Object o) {

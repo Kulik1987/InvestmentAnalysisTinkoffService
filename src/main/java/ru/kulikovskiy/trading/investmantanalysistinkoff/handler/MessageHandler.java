@@ -13,8 +13,4 @@ public interface MessageHandler {
     SendMessage getAllSeparatePayIn(Long chatId) throws NotFoundException;
 
     SendMessage getTickerCloseOper(Long chatId, String ticker) throws NotFoundException;
-
-    SendMessage getAllTickerCloseOper(Long chatId) throws NotFoundException;
-
-
 }

@@ -1,7 +1,7 @@
 package ru.kulikovskiy.trading.investmantanalysistinkoff.mapper;
 
 import org.springframework.stereotype.Component;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.InstrumentOperation;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.InstrumentOperation;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.BuyInstrument;
 
 @Component

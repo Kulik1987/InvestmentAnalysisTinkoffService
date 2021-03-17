@@ -1,18 +1,14 @@
-package ru.kulikovskiy.trading.investmantanalysistinkoff.entity;
+package ru.kulikovskiy.trading.investmantanalysistinkoff.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Table;
 
-@Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "instruments", schema ="investment")
 public class Instruments {
     @Id
     private String figi;

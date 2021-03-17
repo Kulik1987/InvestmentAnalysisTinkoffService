@@ -6,12 +6,9 @@ import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OneTickerCloseOperat
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
 
 public interface AnalyzePortfolioService {
-    AllMoneyReportDto getReportAllDayAllInstrument(String token, String brokerType) throws NotFoundException;
+    AllMoneyReportDto getReportAllDayAllInstrument(String token) throws NotFoundException;
 
-    AllMoneyReportDto getReportAllDayAllInstrumentSeparatePayIn(String token, String brokerType) throws NotFoundException;
+    AllMoneyReportDto getReportAllDayAllInstrumentSeparatePayIn(String token) throws NotFoundException;
 
-    OneTickerCloseOperationReportDto getReportAllDayByTickerCloseOperation(String token, String brokerType, String ticker) throws NotFoundException;
-
-    AllTickerCloseOperationReportDto getAllTickerCloseOperationReportDto(String token, String brokerType) throws NotFoundException;
-
+    OneTickerCloseOperationReportDto getReportAllDayByTickerCloseOperation(String token, String ticker) throws NotFoundException;
 }

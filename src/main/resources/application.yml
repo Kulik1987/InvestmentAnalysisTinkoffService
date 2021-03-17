@@ -3,23 +3,6 @@ server:
 spring:
   main:
     banner-mode: log
-  datasource:
-    url: jdbc:postgresql://172.30.0.1:5437/postgres
-    #url: jdbc:postgresql://localhost:5437/postgres
-    username: invest
-    password: invest
-  jpa:
-    database: postgresql
-    database-platform: org.hibernate.dialect.PostgreSQL10Dialect
-    properties:
-      hibernate:
-        jdbc:
-          lob:
-            non_contextual_creation: true
-    hibernate:
-      ddl-auto: none
-  flyway:
-    check-location: false
 
 client:
   tokenTest: t.-glcSZ-CPGeoUbRnZGTJ0X1n_MkjhMdXf-l35JdvkL7DLzSi0bXGtL44RvIHJ8T46tvEN83gAE8U4xQnGed9Ow

@@ -15,9 +15,8 @@ public enum OperationType {
     TAX_BACK("TaxBack"),
     TAX_COUPON("TaxCoupon"),
     TAX_DIVIDEND("TaxDividend"),
-    CURRENCY("Currency"),
-    DECLINE("Decline");
-    private String description;
+    CURRENCY("Currency");
+    private final String description;
 
     OperationType(String description) {
         this.description = description;
