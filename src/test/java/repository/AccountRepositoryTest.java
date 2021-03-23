@@ -34,10 +34,8 @@ public class AccountRepositoryTest {
     private final String BROKER_ACCOUNT_TYPE = "TinkoffIis";
     @Test
     public void checkFindByTokenAndBrokerAccountType(){
-        this.entityManager.persist(new Account("203933278","TinkoffIis","KULIK","POUL",TOKEN));
+        this.entityManager.persist(new Account("203933278","TinkoffIis",TOKEN, true, ""));
         Account account = this.accountRepository.findByTokenAndBrokerAccountType(TOKEN, BROKER_ACCOUNT_TYPE);
         assertThat(account.getBrokerAccountId()).isEqualTo("203933278");
-        assertThat(account.getFirstName()).isEqualTo("KULIK");
-        assertThat(account.getLastName()).isEqualTo("POUL");
     }
 }
