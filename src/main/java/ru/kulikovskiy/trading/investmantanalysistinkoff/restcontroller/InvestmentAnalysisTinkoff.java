@@ -30,18 +30,18 @@ public class InvestmentAnalysisTinkoff {
     private final ClientConfig clientConfig;
     private final OperationsService operationsService;
     private final AnalyzePortfolioService analyzePortfolioService;
-
+/*
     @RequestMapping(value = "account", method = RequestMethod.GET)
     public ResponseEntity getAccount() {
         try {
             String token = clientConfig.getToken();
-            List<AccountDto> accountDto = accountService.saveClientAccount(token);
+            List<AccountDto> accountDto = accountService.saveClientAccount(token, );
             return ResponseEntity.ok(accountDto);
         } catch (NotFoundException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
+*/
     @RequestMapping(value = "instruments", method = RequestMethod.GET)
     public ResponseEntity<InstrumentDto> getnstruments() {
         InstrumentDto response = new InstrumentDto();
@@ -74,13 +74,13 @@ public class InvestmentAnalysisTinkoff {
             return ResponseEntity.badRequest().body(operationDto);
         }
     }
-
+/*
     @RequestMapping(value = "reportAllDayAllInstrument", method = RequestMethod.GET)
     public ResponseEntity<AllMoneyReportDto> getReportAllDayAllInstrument(@NotNull @RequestParam("brokerType") String brokerType) {
         try {
             String token = clientConfig.getToken();
             checkEmptyToken(token);
-            return ResponseEntity.ok(analyzePortfolioService.getReportAllDayAllInstrument(token, brokerType));
+            return ResponseEntity.ok(analyzePortfolioService.getReportAllDayAllInstrument(, brokerType));
         } catch (NotFoundException e) {
             return ResponseEntity.ok().body(new AllMoneyReportDto(e.getMessage()));
         }
@@ -130,4 +130,6 @@ public class InvestmentAnalysisTinkoff {
             return ResponseEntity.ok().body(new AllTickerCloseOperationReportDto(e.getMessage()));
         }
     }
+
+ */
 }

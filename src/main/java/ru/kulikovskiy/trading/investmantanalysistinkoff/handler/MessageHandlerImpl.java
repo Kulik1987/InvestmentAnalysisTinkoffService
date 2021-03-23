@@ -4,11 +4,11 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.config.ClientConfig;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AllMoneyReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AllTickerCloseOperationReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OneTickerCloseOperationReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AccountService;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AnalyzePortfolioService;
 
 import java.util.List;
@@ -24,7 +24,7 @@ MessageHandlerImpl implements MessageHandler {
     @Autowired
     private AnalyzePortfolioService analyzePortfolioService;
     @Autowired
-    private ClientConfig clientConfig;
+    private AccountService accountService;
 
     @Override
     public SendMessage startMessage(Long chatId) {
@@ -37,7 +37,7 @@ MessageHandlerImpl implements MessageHandler {
     @Override
     public SendMessage getToken(Long chatId, String token) throws NotFoundException {
         checkEmptyToken(token);
-        clientConfig.setToken(token);
+        accountService.saveClientAccount(token, chatId);
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Token add successful");
@@ -47,9 +47,7 @@ MessageHandlerImpl implements MessageHandler {
 
     @Override
     public SendMessage getAllSeparatePayIn(Long chatId) throws NotFoundException {
-        String token = clientConfig.getToken();
-        checkEmptyToken(token);
-        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrumentSeparatePayIn(token, BROKER_TYPE);
+        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrumentSeparatePayIn(chatId, BROKER_TYPE);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
@@ -59,9 +57,7 @@ MessageHandlerImpl implements MessageHandler {
 
     @Override
     public SendMessage getTickerCloseOper(Long chatId, String ticker) throws NotFoundException {
-        String token = clientConfig.getToken();
-        checkEmptyToken(token);
-        OneTickerCloseOperationReportDto response = analyzePortfolioService.getReportAllDayByTickerCloseOperation(token, BROKER_TYPE, ticker);
+        OneTickerCloseOperationReportDto response = analyzePortfolioService.getReportAllDayByTickerCloseOperation(chatId, BROKER_TYPE, ticker);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
@@ -71,9 +67,7 @@ MessageHandlerImpl implements MessageHandler {
 
     @Override
     public SendMessage getAllTickerCloseOper(Long chatId) throws NotFoundException {
-        String token = clientConfig.getToken();
-        checkEmptyToken(token);
-        AllTickerCloseOperationReportDto response = analyzePortfolioService.getAllTickerCloseOperationReportDto(token, BROKER_TYPE);
+        AllTickerCloseOperationReportDto response = analyzePortfolioService.getAllTickerCloseOperationReportDto(chatId, BROKER_TYPE);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
@@ -83,9 +77,7 @@ MessageHandlerImpl implements MessageHandler {
 
     @Override
     public SendMessage getAll(Long chatId) throws NotFoundException {
-        String token = clientConfig.getToken();
-        checkEmptyToken(token);
-        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrument(token, BROKER_TYPE);
+        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrument(chatId, BROKER_TYPE);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
@@ -99,8 +91,11 @@ MessageHandlerImpl implements MessageHandler {
         List<String> texts = response.getReportInstrument().stream().map(i -> NAME + i.getNameInstrument() + "\n" +
                 PERIOD_AVG_ALL + i.getAverageCountDay() + "\n" +
                 PROFIT_AVG_ALL + i.getAverageProfit() + "\n" +
-                PERCENT_ALL + i.getAveragePercentProfit()+ "\n"+ "\n").collect(Collectors.toList());
-        String text = "Общий доход: " + response.getAllSumProfit() + "\n" + texts.stream().collect(Collectors.joining());
+                PERCENT_ALL + i.getAveragePercentProfit() + "\n" + "\n").collect(Collectors.toList());
+        String text = "Общий доход в рублевых инструментах: " + response.getAllSumProfit() + "\n" +
+                "Общий доход в USD инструментах: " + response.getAllSumProfitUsd() + "\n" +
+                "Общий доход в EUR инструментах: " + response.getAllSumProfitEur() + "\n\n"
+                + texts.stream().collect(Collectors.joining());
         return text;
     }
 
@@ -124,9 +119,11 @@ MessageHandlerImpl implements MessageHandler {
         String text =
                 TICKER + response.getReportInstrument().getFigi() + "\n" +
                         NAME + response.getReportInstrument().getNameInstrument() + "\n" +
+                        QUANTITY + response.getReportInstrument().getQuantityAll() + "\n" +
                         PERIOD_AVG + response.getReportInstrument().getAverageCountDay() + "\n" +
                         PROFIT_AVG + response.getReportInstrument().getAverageProfit() + "\n" +
-                        PERCENT + response.getReportInstrument().getAveragePercentProfit();
+                        PERCENT + response.getReportInstrument().getAveragePercentProfit() + "\n" +
+                        ALL_PROFIT + response.getReportInstrument().getAllProfitByTicker();
         return text;
     }
 }

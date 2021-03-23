@@ -11,4 +11,6 @@ public class ReportInstrument {
     private String averagePercentProfitYear;
     private String averageCountDay;
     private int quantityAll;
+    private String allProfitByTicker;
+    private String currency;
 }

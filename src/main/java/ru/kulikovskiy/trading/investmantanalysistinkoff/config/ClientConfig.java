@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-//@ConfigurationProperties(prefix = "client")
+@ConfigurationProperties(prefix = "client")
 @Getter
 @Setter
 public class ClientConfig {
