@@ -17,7 +17,7 @@ public class InstrumentOperationsMapper {
         instrumentOperation.setDateOperation(DateUtil.getLocalDateTime(operations.getDate()));
         instrumentOperation.setCurrency(operations.getCurrency());
         instrumentOperation.setOperationType(operations.getOperationType());
-        instrumentOperation.setQuantity(operations.getQuantity());
+        instrumentOperation.setQuantity(operations.getQuantityExecuted());
         instrumentOperation.setPayment(operations.getPayment());
 
         if (operations.getCommission() != null) {
