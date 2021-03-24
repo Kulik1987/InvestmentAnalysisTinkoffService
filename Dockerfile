@@ -7,6 +7,6 @@ RUN mvn -f /home/app/pom.xml clean package
 # Package stage
 #
 FROM openjdk:11-jre-slim
-COPY --from=build /home/app/target/InvestmentAnalysisTinkoffService-1.0-SNAPSHOT.jar /usr/local/lib/InvestmentAnalysisTinkoffService-1.0-SNAPSHOT.jar
+COPY --from=build /home/app/target/investanalyse.jar /usr/local/lib/investanalyse.jar
 EXPOSE 8082
-ENTRYPOINT ["java","-jar","/usr/local/lib/InvestmentAnalysisTinkoffService-1.0-SNAPSHOT.jar"]
+ENTRYPOINT ["java","-jar","/usr/local/lib/investanalyse.jar"]
