@@ -1,1 +1,1 @@
-web: java -jar target/InvestmentAnalysisTinkoffService-1.0-SNAPSHOT.jar
+web: java -jar target/app-1.0.jar
