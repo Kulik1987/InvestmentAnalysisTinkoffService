@@ -8,7 +8,6 @@ import org.telegram.telegrambots.ApiContextInitializer;
 
 @SpringBootApplication
 @EnableJpaRepositories
-@EnableScheduling
 public class InvestmentAnalysisTinkoffService {
     public static
     void main(String[] args) {
