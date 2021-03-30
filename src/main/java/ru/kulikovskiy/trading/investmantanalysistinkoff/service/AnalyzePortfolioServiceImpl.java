@@ -131,7 +131,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         if (ALL_PAY_IN_SEPARATE.equals(reportType)) {
             avgDayMoneyOnAccount = (int) getDayOpenPortfolioAvg(currencyOperations, payInRub);
         }
-        double percentProfitYear = getPercentProfitYear(payInRub, allSumRubPortfolio, dayOpenPortfolio);
+        double percentProfitYear = getPercentProfitYear(payInRub, allSumRubPortfolio, avgDayMoneyOnAccount);
 
         PercentageInstrument percentageInstrument = new PercentageInstrument(period.getStartDate().toLocalDate(), period.getEndDate().toLocalDate(), String.valueOf(dayOpenPortfolio), String.valueOf(avgDayMoneyOnAccount), payInRub, payOutRub, comissionAll, Math.round(allSumRubPortfolio * 100d) / 100d, String.valueOf(Math.round(percentProfit * 100d) / 100d) + "%", String.valueOf(Math.round(percentProfitYear * 100d) / 100d) + "%");
         return percentageInstrument;
