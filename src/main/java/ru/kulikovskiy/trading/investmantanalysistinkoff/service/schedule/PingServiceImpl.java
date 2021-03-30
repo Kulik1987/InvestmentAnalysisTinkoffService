@@ -14,7 +14,7 @@ public class PingServiceImpl implements PingService {
     private AccountService accountService;
 
     @Override
-    @Scheduled(cron = "0 0 1-2 * * *")
+    @Scheduled(cron = "0 0,20,40 * * * *")
     public void pingBot() {
         try {
             String token = accountService.getToken("1");
