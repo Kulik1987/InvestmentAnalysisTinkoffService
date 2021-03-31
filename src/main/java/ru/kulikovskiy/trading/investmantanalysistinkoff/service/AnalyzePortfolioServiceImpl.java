@@ -74,6 +74,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         OperationDto operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
 
         List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
+        getOpenDayInvest(period, currencyOperations);
 
         PercentageInstrument percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN_SEPARATE);
         return new AllMoneyReportDto(percentageInstrument);
