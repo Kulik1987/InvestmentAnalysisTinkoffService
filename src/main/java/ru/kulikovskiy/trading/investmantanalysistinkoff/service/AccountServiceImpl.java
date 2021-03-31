@@ -25,13 +25,5 @@ public class AccountServiceImpl implements AccountService {
         hazelcastInstance.getMap(TOKENS).put(chatId, token);
     }
 
-    @Override
-    public String getToken(String chatId) throws NotFoundException {
-        String token = (String) hazelcastInstance.getMap(TOKENS).get(chatId);
-        if (token.isEmpty()) {
-            throw new NotFoundException("token not found");
-        }
-        return token;
-    }
 
 }

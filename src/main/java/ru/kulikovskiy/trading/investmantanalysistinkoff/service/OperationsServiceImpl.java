@@ -1,9 +1,11 @@
 package ru.kulikovskiy.trading.investmantanalysistinkoff.service;
 
+import com.hazelcast.core.HazelcastInstance;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.jetty.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OperationDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
@@ -16,6 +18,10 @@ import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Operations;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static ru.kulikovskiy.trading.HazelcastConst.CURRENCY;
+import static ru.kulikovskiy.trading.investmantanalysistinkoff.Const.*;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +35,13 @@ public class OperationsServiceImpl implements OperationsService {
     @Autowired
     private InstrumentOperationsMapper instrumentOperationsMapper;
 
+    @Qualifier("hazelcastInstance")
+    @Autowired
+    private HazelcastInstance hazelcastInstance;
+
     private final String DONE = "Done";
+    private final String TCS_FIGI_USD = "BBG005DXJS36";
+    private final String TCS_FIGI_RUB = "BBG00QPYJ5H0";
 
     @Override
     public OperationDto getOperationsBetweenDate(String fromDate, String toDate, String token, String brokerType, String accountId) {
@@ -54,6 +66,7 @@ public class OperationsServiceImpl implements OperationsService {
             operationDto.setErrorMessage("accountId is empty");
             return operationDto;
         }
+
         List<Operations> operationsList = investmentTinkoffService.getOperationsByFigi(startPeriod, endPeriod, accountId, token, figi);
 
         return getOperationDto(operationDto, operationsList);
@@ -72,6 +85,13 @@ public class OperationsServiceImpl implements OperationsService {
     }
 
     private int getOperationCurrencyAndInstrument(List<Operations> operationsList, List<InstrumentOperation> instrumentOperationList, List<CurrencyOperation> currencyOperationList) {
+        String figi = operationsList.stream().findFirst().get().getFigi();
+        if (TCS_FIGI_USD.equals(figi)) {
+           String currency = String.valueOf(hazelcastInstance.getMap(CURRENCY).get(TCS));
+           operationsList = operationsList.stream().filter(ol -> {
+              return currency.equals(ol.getCurrency().name());
+           }).collect(Collectors.toList());
+        }
         return operationsList.stream().filter(o -> DONE.equals(o.getStatus())).mapToInt(o -> {
             if ((OperationType.SELL.getDescription().equals(o.getOperationType())) ||
                     (OperationType.BUY.getDescription().equals(o.getOperationType())) ||

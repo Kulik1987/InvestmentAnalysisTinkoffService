@@ -1,7 +1,9 @@
 package ru.kulikovskiy.trading.investmantanalysistinkoff.service;
 
+import com.hazelcast.core.HazelcastInstance;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.*;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.CurrencyOperation;
@@ -23,11 +25,18 @@ import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static ru.kulikovskiy.trading.DateUtil.getStringFromLocalDateTime;
+import static ru.kulikovskiy.trading.HazelcastConst.CURRENCY;
+import static ru.kulikovskiy.trading.investmantanalysistinkoff.Const.*;
 
 @Service
 public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
     private static final String ALL_PAY_IN = "allPayIn";
     private static final String ALL_PAY_IN_SEPARATE = "allPayInSeparate";
+
+    @Qualifier("hazelcastInstance")
+    @Autowired
+    private HazelcastInstance hazelcastInstance;
+
     String BROKER_TYPE = "TinkoffIis";
     @Autowired
     private InvestmentTinkoffService investmentTinkoffService;
@@ -41,6 +50,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
     private final String FIGI_USD = "BBG0013HGFT4";
     private final String FIGI_EUR = "BBG0013HJJ31";
 
+
     @Override
     public AllMoneyReportDto getReportAllDayAllInstrument(String token) throws NotFoundException {
         String accountId = getAccountId(token);
@@ -49,11 +59,12 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         OperationDto operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
 
         List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
-
+        getOpenDayInvest(period, currencyOperations);
 
         PercentageInstrument percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN);
         return new AllMoneyReportDto(percentageInstrument);
     }
+
 
     @Override
     public AllMoneyReportDto getReportAllDayAllInstrumentSeparatePayIn(String token) throws NotFoundException {
@@ -72,8 +83,14 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
     public OneTickerCloseOperationReportDto getReportAllDayByTickerCloseOperation(String token, String ticker) throws NotFoundException {
         String accountId = getAccountId(token);
         Period period = getPeriodDateAll();
-
+        if (TCSG.equals(ticker)) {
+            ticker = TCS;
+            hazelcastInstance.getMap(CURRENCY).put(TCS, RUB);
+        } else if (TCS.equals(ticker)) {
+            hazelcastInstance.getMap(CURRENCY).put(TCS, USD);
+        }
         FigiNameDto figiNameDto = getNameInstrumentByFigi(ticker, token);
+
         OperationDto operationDto = getOperationsByFigi(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId, figiNameDto.getFigi());
         List<InstrumentOperation> instrumentOperationList = operationDto.getInstrumentOperationList();
 
@@ -84,6 +101,14 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
 
         ReportInstrument reportInstrument = setPercantageByInstrument(tradeInstrument.getSellInstrument(), ticker, tradeInstrument.getName());
         return new OneTickerCloseOperationReportDto(reportInstrument);
+    }
+
+
+
+    private void getOpenDayInvest(Period period, List<CurrencyOperation> currencyOperations) {
+        LocalDateTime startDate = currencyOperations.stream().map(u -> u.getDateOperation()).min(LocalDateTime::compareTo).get();
+        period.setStartDate(startDate);
+        period.setDayOpen(DAYS.between(period.getStartDate(), period.getEndDate()));
     }
 
     private OperationDto getOperationsByFigi(String token, String brokerType, @NotNull LocalDateTime
@@ -130,6 +155,8 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
 
         if (ALL_PAY_IN_SEPARATE.equals(reportType)) {
             avgDayMoneyOnAccount = (int) getDayOpenPortfolioAvg(currencyOperations, payInRub);
+        } else if (ALL_PAY_IN.equals(reportType)) {
+            avgDayMoneyOnAccount = (int) period.getDayOpen();
         }
         double percentProfitYear = getPercentProfitYear(payInRub, allSumRubPortfolio, avgDayMoneyOnAccount);
 
@@ -206,7 +233,6 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
 
         period.setStartDate(minDate);
         period.setEndDate(maxDate);
-        period.setDayOpen(DAYS.between(minDate, maxDate));
         return period;
     }
 
