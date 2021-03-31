@@ -41,7 +41,7 @@ MessageHandlerImpl implements MessageHandler {
                 "/allSeparateDate - тут при расчете дохода в % годовых учитывается дата пополнения счета" + "\n" +
                 "/tickerCloseOper <ticker> - выводит информацию по закрытым операциям по 1 тикеру " + "\n" +
                 "" + "\n" + "\n" +
-                "Пока я в начале пути анализа доходности инвестиций, но со временем обязательно много чему научусь" );
+                "Пока я в начале пути анализа доходности инвестиций, но со временем обязательно многому научусь" );
         return message;
     }
 
@@ -51,7 +51,7 @@ MessageHandlerImpl implements MessageHandler {
         accountService.saveToken(token, String.valueOf(chatId));
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText("Token add successful");
+        message.setText("Токен успешно добавлен. Теперь можно получать отчеты!");
         return message;
 
     }
