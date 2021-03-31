@@ -83,18 +83,22 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
     public OneTickerCloseOperationReportDto getReportAllDayByTickerCloseOperation(String token, String ticker) throws NotFoundException {
         String accountId = getAccountId(token);
         Period period = getPeriodDateAll();
+        String tickerModify = "";
         if (TCSG.equals(ticker)) {
-            ticker = TCS;
+            tickerModify = TCS;
             hazelcastInstance.getMap(CURRENCY).put(TCS, RUB);
         } else if (TCS.equals(ticker)) {
+            tickerModify = ticker;
             hazelcastInstance.getMap(CURRENCY).put(TCS, USD);
+        } else {
+            tickerModify = ticker;
         }
-        FigiNameDto figiNameDto = getNameInstrumentByFigi(ticker, token);
+        FigiNameDto figiNameDto = getNameInstrumentByFigi(tickerModify, token);
 
         OperationDto operationDto = getOperationsByFigi(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId, figiNameDto.getFigi());
         List<InstrumentOperation> instrumentOperationList = operationDto.getInstrumentOperationList();
 
-        List<SellInstrument> sellInstruments = getSellInstruments(instrumentOperationList, ticker);
+        List<SellInstrument> sellInstruments = getSellInstruments(instrumentOperationList, tickerModify);
         List<BuyInstrument> buyInstruments = getBuyOperationByFigi(instrumentOperationList);
 
         TradeInstrument tradeInstrument = getTradeInstrument(figiNameDto.getFigi(), figiNameDto.getName(), sellInstruments, buyInstruments);

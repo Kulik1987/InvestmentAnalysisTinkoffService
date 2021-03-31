@@ -41,7 +41,6 @@ public class OperationsServiceImpl implements OperationsService {
 
     private final String DONE = "Done";
     private final String TCS_FIGI_USD = "BBG005DXJS36";
-    private final String TCS_FIGI_RUB = "BBG00QPYJ5H0";
 
     @Override
     public OperationDto getOperationsBetweenDate(String fromDate, String toDate, String token, String brokerType, String accountId) {
@@ -88,9 +87,7 @@ public class OperationsServiceImpl implements OperationsService {
         String figi = operationsList.stream().findFirst().get().getFigi();
         if (TCS_FIGI_USD.equals(figi)) {
            String currency = String.valueOf(hazelcastInstance.getMap(CURRENCY).get(TCS));
-           operationsList = operationsList.stream().filter(ol -> {
-              return currency.equals(ol.getCurrency().name());
-           }).collect(Collectors.toList());
+           operationsList = operationsList.stream().filter(ol -> currency.equals(ol.getCurrency().name())).collect(Collectors.toList());
         }
         return operationsList.stream().filter(o -> DONE.equals(o.getStatus())).mapToInt(o -> {
             if ((OperationType.SELL.getDescription().equals(o.getOperationType())) ||
