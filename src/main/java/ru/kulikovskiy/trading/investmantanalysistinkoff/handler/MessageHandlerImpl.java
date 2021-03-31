@@ -32,7 +32,16 @@ MessageHandlerImpl implements MessageHandler {
     public SendMessage startMessage(Long chatId) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText("Hello. This is analise appplication.");
+        message.setText("Привет! Я бот, который поможет тебе оценить свои доходы в инвестициях." + "\n" +
+                "вот что я умею:" + "\n" +
+                "Для начала тебе надо залогиниться " + "\n" +
+                "/token <token> - в данную команду надо передать токен из тиньков инвестиций" + "\n" +
+                "Теперь можно смотреть сколько денег ты заработал на бирже:" + "\n" +
+                "/all - получить отчет по общему доходу по всем акциям, Етф, облигациям" + "\n" +
+                "/allSeparateDate - тут при расчете дохода в % годовых учитывается дата пополнения счета" + "\n" +
+                "/tickerCloseOper <ticker> - выводит информацию по закрытым операциям по 1 тикеру " + "\n" +
+                "" + "\n" + "\n" +
+                "Пока я в начале пути анализа доходности инвестиций, но со временем обязательно много чему научусь" );
         return message;
     }
 
