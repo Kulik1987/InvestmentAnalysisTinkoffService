@@ -14,7 +14,7 @@ public interface TelegramConst {
     String START_DATE = "Начало анализируемого периода: ";
     String END_DATE = "Окончание анализируемого периода: ";
     String PERIOD = "Продолжительность анализируемого периода: ";
-    String PERIOD_AVG = "Средний период нахождение денег на счете: ";
+    String PERIOD_AVG = "Средний период между покупкой и продажей акции дней: ";
     String PAY_IN = "Сумма пополнений: ";
     String PAY_OUT = "Сумма выведенных денег: ";
     String CURRENT_SUM = "Текущая сумма на счете: ";
