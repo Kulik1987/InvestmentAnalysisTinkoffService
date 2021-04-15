@@ -4,13 +4,9 @@ spring:
   main:
     banner-mode: log
 
-client:
-  tokenTest: t.-glcSZ-CPGeoUbRnZGTJ0X1n_MkjhMdXf-l35JdvkL7DLzSi0bXGtL44RvIHJ8T46tvEN83gAE8U4xQnGed9Ow
-  token:
-
 tcsbroker:
   url: https://api-invest.tinkoff.ru/openapi/
 
 bot:
   name: AnalizePortfolioInvestmentBot
-  token:
+  token: 1663649822:AAGtb9BEfZh6Vaz0FXq9uKSLFcWk9EhI4z4
