@@ -22,7 +22,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 class AnalyzePortfolioServiceImplTest extends Specification {
-    def TOKEN = "t.eM0-UnaX9VHGB2iwfvBlexxcRfkQasak-GMGpYzf3aamlOV_m4nIRl_pCs5xbl6GbwMIR5ljCn5vF-8t6aKPWA"
+
     def UNSUCCESS_TOKEN = "TestToken"
     def UNSUCCESS_TOKEN_POSITION_EMPTY = "testEmpty"
     def FIRST_NAME = "KULIK"

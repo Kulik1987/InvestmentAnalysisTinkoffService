@@ -22,12 +22,12 @@ spring:
     check-location: false
 
 client:
-  tokenTest: t.-glcSZ-CPGeoUbRnZGTJ0X1n_MkjhMdXf-l35JdvkL7DLzSi0bXGtL44RvIHJ8T46tvEN83gAE8U4xQnGed9Ow
-  token: t.eM0-UnaX9VHGB2iwfvBlexxcRfkQasak-GMGpYzf3aamlOV_m4nIRl_pCs5xbl6GbwMIR5ljCn5vF-8t6aKPWA
+  tokenTest:
+  token:
 
 tcsbroker:
   url: https://api-invest.tinkoff.ru/openapi/
 
 bot:
   name: AnalizePortfolioInvestmentBot
-  token: 1663649822:AAGtb9BEfZh6Vaz0FXq9uKSLFcWk9EhI4z4
+  token:

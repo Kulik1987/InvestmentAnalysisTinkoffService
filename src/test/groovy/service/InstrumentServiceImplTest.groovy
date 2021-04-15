@@ -9,7 +9,7 @@ import ru.kulikovskiy.trading.investmantanalysistinkoff.service.InvestmentTinkof
 import spock.lang.Specification
 
 class InstrumentServiceImplTest extends Specification {
-    def TOKEN = "t.eM0-UnaX9VHGB2iwfvBlexxcRfkQasak-GMGpYzf3aamlOV_m4nIRl_pCs5xbl6GbwMIR5ljCn5vF-8t6aKPWA"
+
     def UNSUCCESS_TOKEN = "TestToken"
     def instrumentStock = new Instruments(figi: "BBG000CTQBF3",
             ticker: "SBUX",

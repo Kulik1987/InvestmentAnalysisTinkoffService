@@ -11,7 +11,6 @@ import spock.lang.Specification
 
 class AccountServiceImplTest extends Specification {
 
-    def TOKEN = "t.eM0-UnaX9VHGB2iwfvBlexxcRfkQasak-GMGpYzf3aamlOV_m4nIRl_pCs5xbl6GbwMIR5ljCn5vF-8t6aKPWA"
     def FIRST_NAME = "KULIK"
     def LAST_NAME = "POUL"
 
