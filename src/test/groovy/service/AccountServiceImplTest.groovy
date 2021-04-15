@@ -11,7 +11,8 @@ import spock.lang.Specification
 
 class AccountServiceImplTest extends Specification {
 
-    def TOKEN = "t.eM0-UnaX9VHGB2iwfvBlexxcRfkQasak-GMGpYzf3aamlOV_m4nIRl_pCs5xbl6GbwMIR5ljCn5vF-8t6aKPWA"
+
+    def CHAT_ID = "1"
     def FIRST_NAME = "KULIK"
     def LAST_NAME = "POUL"
 
@@ -38,10 +39,6 @@ class AccountServiceImplTest extends Specification {
         getAccounts("testNull") >> null
         getAccounts(TOKEN as String) >> Collections.singletonList(accountDto)
     }
-    private accountRepository = Mock(AccountRepository) {
-        findByTokenAndBrokerAccountType(TOKEN, ACCOUNT_TYPE) >> accountBroker
-        findByTokenAndBrokerAccountType(TOKEN, ACCOUNT_TYPE_IIS) >> accountIis
-    }
 
     private AccountService accountService = new AccountServiceImpl(
             investmentTinkoffService: investmentTinkoffService,
@@ -53,11 +50,10 @@ class AccountServiceImplTest extends Specification {
         given:
 
         when:
-        response = accountService.saveClientAccount(TOKEN)
+        response = accountService.saveToken(TOKEN, CHAT_ID)
 
 
         then:
-        1* accountRepository.save(_)
         response.size() == 1
         response.contains(new AccountDto(brokerAccountType: accountBroker.brokerAccountType, brokerAccountId: accountBroker.brokerAccountId))
     }
