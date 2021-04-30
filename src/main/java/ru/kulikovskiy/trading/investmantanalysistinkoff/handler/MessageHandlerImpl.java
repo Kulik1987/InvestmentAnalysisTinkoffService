@@ -103,7 +103,7 @@ MessageHandlerImpl implements MessageHandler {
                         PERIOD + response.getReportInstrument().getPeriod() + "\n" +
                         PAY_IN + response.getReportInstrument().getPayInAll() + "\n" +
                         PAY_OUT + response.getReportInstrument().getPayOutAll() + "\n" +
-                        COMMISSION_ALL + response.getReportInstrument().getPayOutAll() + "\n" +
+                        COMMISSION_ALL + response.getReportInstrument().getComissionAll() + "\n" +
                         CURRENT_SUM + response.getReportInstrument().getCurrentSum() + "\n" +
                         PERCENT + response.getReportInstrument().getPercentProfit() + "\n" +
                         PERCENT_YEAR + response.getReportInstrument().getPercentProfitYear();
@@ -118,6 +118,7 @@ MessageHandlerImpl implements MessageHandler {
                         PERIOD_AVG_ALL + response.getReportInstrument().getPeriodAvg() + "\n" +
                         PAY_IN + response.getReportInstrument().getPayInAll() + "\n" +
                         PAY_OUT + response.getReportInstrument().getPayOutAll() + "\n" +
+                        COMMISSION_ALL + response.getReportInstrument().getComissionAll() + "\n" +
                         CURRENT_SUM + response.getReportInstrument().getCurrentSum() + "\n" +
                         PERCENT + response.getReportInstrument().getPercentProfit() + "\n" +
                         PERCENT_YEAR + response.getReportInstrument().getPercentProfitYear();

@@ -1,74 +1,30 @@
 package service
 
-import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AccountDto
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.Account
-import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException
-import ru.kulikovskiy.trading.investmantanalysistinkoff.repository.AccountRepository
+import com.hazelcast.core.HazelcastInstance
+import com.hazelcast.core.IMap
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AccountService
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AccountServiceImpl
-import ru.kulikovskiy.trading.investmantanalysistinkoff.service.InvestmentTinkoffService
 import spock.lang.Specification
 
 class AccountServiceImplTest extends Specification {
 
-
     def CHAT_ID = "1"
-    def FIRST_NAME = "KULIK"
-    def LAST_NAME = "POUL"
-
-    def ACCOUNT_ID = "2039206103"
-    def ACCOUNT_ID_IIS = "2039332784"
-    def ACCOUNT_TYPE = "Tinkoff"
-    def ACCOUNT_TYPE_IIS = "TinkoffIis"
-    def accountBroker = new Account(brokerAccountId: ACCOUNT_ID,
-            brokerAccountType: ACCOUNT_TYPE,
-            firstName: FIRST_NAME,
-            lastName: LAST_NAME,
-            token: TOKEN)
-    def accountIis = new Account(brokerAccountId: ACCOUNT_ID_IIS,
-            brokerAccountType: ACCOUNT_TYPE_IIS,
-            firstName: FIRST_NAME,
-            lastName: LAST_NAME,
-            token: TOKEN)
-    def accountDto = new AccountDto(brokerAccountId: ACCOUNT_ID,
-    brokerAccountType: ACCOUNT_TYPE)
-
-    def response
-
-    private investmentTinkoffService = Mock(InvestmentTinkoffService) {
-        getAccounts("testNull") >> null
-        getAccounts(TOKEN as String) >> Collections.singletonList(accountDto)
+    private hazelcastInstance = Mock(HazelcastInstance) {
+        getMap(_) >> Mock(IMap)
     }
 
     private AccountService accountService = new AccountServiceImpl(
-            investmentTinkoffService: investmentTinkoffService,
-            accountRepository: accountRepository
+            hazelcastInstance: hazelcastInstance,
     )
 
 
     def "get account from token SUCCESS"() {
         given:
-
+        def response
         when:
-        response = accountService.saveToken(TOKEN, CHAT_ID)
-
+        response = accountService.saveToken("TOKEN_TEST", CHAT_ID)
 
         then:
-        response.size() == 1
-        response.contains(new AccountDto(brokerAccountType: accountBroker.brokerAccountType, brokerAccountId: accountBroker.brokerAccountId))
-    }
-
-    def "Name"() {
-    }
-
-    def "get account from token UNSUCCESS"() {
-        given:
-
-        when:
-            response = accountService.saveClientAccount("testNull")
-
-        then:
-            def e = thrown(NotFoundException)
-            e.message == "accounts not found in the Tinkoff investment"
+        response == null
     }
 }

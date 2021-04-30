@@ -169,8 +169,11 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return percentageInstrument;
     }
 
-    private String getAccountId(String token) {
+    private String getAccountId(String token) throws NotFoundException {
         List<AccountDto> accounts = investmentTinkoffService.getAccounts(token);
+        if ((accounts == null) || (accounts.isEmpty())){
+            throw new NotFoundException("account is empty");
+        }
         return accounts.stream().filter(a -> BROKER_TYPE.equals(a.getBrokerAccountType())).findFirst().get().getBrokerAccountId();
     }
 
@@ -355,8 +358,15 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         Position positionUsd = positionList.stream().filter(position -> FIGI_USD.equals(position.getFigi())).findFirst().orElse(null);
         Position positionEur = positionList.stream().filter(position -> FIGI_EUR.equals(position.getFigi())).findFirst().orElse(null);
 
-        double rateUsd = getCurrentRateInstrument(positionUsd);
-        double rateEur = getCurrentRateInstrument(positionEur);
+        double rateUsd = 0;
+        if (positionUsd != null) {
+            rateUsd = getCurrentRateInstrument(positionUsd);
+        }
+
+        double rateEur = 0;
+        if (positionEur != null) {
+            rateEur = getCurrentRateInstrument(positionEur);
+        }
         positionList.forEach(p -> {
             if ("USD".equals(p.getAveragePositionPrice().getCurrency())) {
                 sumUsdPortfolio[0] += getCurrentSumInstrument(p);

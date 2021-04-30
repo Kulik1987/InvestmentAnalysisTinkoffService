@@ -21,9 +21,7 @@ public class AccountServiceImpl implements AccountService {
     private HazelcastInstance hazelcastInstance;
 
     @Override
-    public void saveToken(String token, String chatId) throws NotFoundException {
+    public void saveToken(String token, String chatId) {
         hazelcastInstance.getMap(TOKENS).put(chatId, token);
     }
-
-
 }

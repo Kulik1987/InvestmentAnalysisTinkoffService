@@ -1,14 +1,10 @@
 package service
 
-
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.CurrencyOperation
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.InstrumentOperation
 import ru.kulikovskiy.trading.investmantanalysistinkoff.mapper.CurrencyOperationsMapper
 import ru.kulikovskiy.trading.investmantanalysistinkoff.mapper.InstrumentOperationsMapper
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.CurrencyOperation
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.InstrumentOperation
 import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Operations
-import ru.kulikovskiy.trading.investmantanalysistinkoff.repository.CurrencyOperationRepository
-import ru.kulikovskiy.trading.investmantanalysistinkoff.repository.InstrumentOperationRepository
-import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AccountService
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.InvestmentTinkoffService
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.OperationsService
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.OperationsServiceImpl
@@ -24,9 +20,11 @@ class OperationServiceImplTest extends Specification {
     def BROKER_ACCOUNT_TYPE = "TinkoffIis"
     def ACCOUNT_ID_IIS = "2039332784"
     def ACCOUNT_ID = "203933278"
-    def ACCOUNT_TYPE_IIS = "TinkoffIis"
     def DATE = "2020-07-31T17:04:32.000Z"
     def TO_DATE = "2021-07-31T18:04:32.000Z"
+    def TOKEN = "Test_Token"
+    def BROKER_TYPE = "TinkoffIis"
+    def FIGI = "TestFigi"
     def operationToCurrency = new Operations(operationType: "PayIn",
             date: DATE,
             isMarginCall: false,
@@ -72,65 +70,76 @@ class OperationServiceImplTest extends Specification {
             figi: "TCS00A1029T9"
     )
     def operationsList = new ArrayList<Operations>(Arrays.asList(operationToInstrument, operationToCurrency))
+    def operationsFigiList = new ArrayList<Operations>(Arrays.asList(operationToInstrument))
     def response
 
     private investmentTinkoffService = Mock(InvestmentTinkoffService) {
-        getOperations(_, _, ACCOUNT_ID_IIS, _) >> operationsList
-        getOperations(_, _, ACCOUNT_ID, _) >> new ArrayList<Operations>()
-    }
-    private accountService = Mock(AccountService) {
-        getAccountId(TOKEN, _) >> ACCOUNT_ID_IIS
-        getAccountId(UNSUCCESS_TOKEN, _) >> ""
-        getAccountId(UNSUCCESS_TOKEN_OPERATIONS_EMPTY, _) >> ACCOUNT_ID
+        getOperations(_, _, ACCOUNT_ID_IIS, UNSUCCESS_TOKEN_OPERATIONS_EMPTY) >> new ArrayList<Operations>()
+        getOperations(_, _, ACCOUNT_ID_IIS,TOKEN) >> operationsList
+        getOperationsByFigi(_, _, ACCOUNT_ID_IIS,TOKEN, FIGI) >> operationsFigiList
     }
     private currencyOperationsMapper = Mock(CurrencyOperationsMapper) {
-        toCurrencyOperation(_) >> currency
+        toCurrencyOperation(_ as Operations) >> currency
     }
     private instrumentOperationsMapper = Mock(InstrumentOperationsMapper) {
         toInstrumentOperation(_) >> instrument
     }
-    private instrumentOperationRepository = Mock(InstrumentOperationRepository) {
-    }
-    private currencyOperationRepository = Mock(CurrencyOperationRepository) {
-    }
 
     private OperationsService operationsService = new OperationsServiceImpl(
             investmentTinkoffService: investmentTinkoffService,
-            accountService: accountService,
-            instrumentOperationRepository: instrumentOperationRepository,
-            currencyOperationRepository: currencyOperationRepository,
             currencyOperationsMapper: currencyOperationsMapper,
             instrumentOperationsMapper: instrumentOperationsMapper
     )
 
-    def "get account from token SUCCESS"() {
+    def "getOperationsBetweenDate SUCCESS"() {
         given:
 
         when:
-        response = operationsService.getOperationsBetweenDate(DATE, TO_DATE, TOKEN, BROKER_ACCOUNT_TYPE)
+        response = operationsService.getOperationsBetweenDate(DATE, TO_DATE, TOKEN , BROKER_TYPE, ACCOUNT_ID_IIS)
 
         then:
-        1 * currencyOperationRepository.save(_)
         response.countLoadOperation == 2
     }
 
-    def "get account from token UNSUCCESS AccountId emplty"() {
+    def "getOperationsBetweenDate UNSUCCESS AccountId emplty"() {
         given:
 
         when:
-        response = operationsService.getOperationsBetweenDate(DATE, TO_DATE, UNSUCCESS_TOKEN, BROKER_ACCOUNT_TYPE)
+        response = operationsService.getOperationsBetweenDate(DATE, TO_DATE, UNSUCCESS_TOKEN, BROKER_ACCOUNT_TYPE, "")
 
         then:
         response.errorMessage == "accountId is empty"
     }
 
-    def "get account from token UNSUCCESS Operations emplty"() {
+    def "getOperationsBetweenDate UNSUCCESS Operations emplty"() {
         given:
 
         when:
-        response = operationsService.getOperationsBetweenDate(DATE, TO_DATE, UNSUCCESS_TOKEN_OPERATIONS_EMPTY, BROKER_ACCOUNT_TYPE)
+        response = operationsService.getOperationsBetweenDate(DATE, TO_DATE, UNSUCCESS_TOKEN_OPERATIONS_EMPTY, BROKER_ACCOUNT_TYPE,ACCOUNT_ID_IIS)
 
         then:
         response.errorMessage == "operationList is empty"
     }
+
+    def "getOperationsBetweenDateByFigi SUCCESS"() {
+        given:
+
+        when:
+        response = operationsService.getOperationsBetweenDateByFigi(DATE, TO_DATE, TOKEN , BROKER_TYPE, ACCOUNT_ID_IIS, FIGI)
+
+        then:
+        response.countLoadOperation == 1
+    }
+
+    def "getOperationsBetweenDateByFigi UNSUCCESS AccountId emplty"() {
+        given:
+
+        when:
+        response = operationsService.getOperationsBetweenDateByFigi(DATE, TO_DATE, UNSUCCESS_TOKEN, BROKER_ACCOUNT_TYPE, "",FIGI)
+
+        then:
+        response.errorMessage == "accountId is empty"
+    }
+
+
 }

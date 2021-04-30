@@ -1,117 +1,139 @@
 package service
 
 
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.Account
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.CurrencyOperation
-import ru.kulikovskiy.trading.investmantanalysistinkoff.entity.InstrumentOperation
+import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AccountDto
+import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OperationDto
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException
 import ru.kulikovskiy.trading.investmantanalysistinkoff.mapper.BuyInstrumentMapper
 import ru.kulikovskiy.trading.investmantanalysistinkoff.mapper.SellInstrumentMapper
-import ru.kulikovskiy.trading.investmantanalysistinkoff.model.AveragePositionPrice
-import ru.kulikovskiy.trading.investmantanalysistinkoff.model.ExpectedYield
-import ru.kulikovskiy.trading.investmantanalysistinkoff.model.PercentageInstrument
-import ru.kulikovskiy.trading.investmantanalysistinkoff.model.Position
-import ru.kulikovskiy.trading.investmantanalysistinkoff.repository.CurrencyOperationRepository
-import ru.kulikovskiy.trading.investmantanalysistinkoff.repository.InstrumentOperationRepository
-import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AccountService
+import ru.kulikovskiy.trading.investmantanalysistinkoff.model.*
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AnalyzePortfolioServiceImpl
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.InvestmentTinkoffService
+import ru.kulikovskiy.trading.investmantanalysistinkoff.service.OperationsService
+import ru.tinkoff.invest.openapi.models.Currency
 import spock.lang.Specification
 
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 class AnalyzePortfolioServiceImplTest extends Specification {
-
+    def TOKEN = "Token"
     def UNSUCCESS_TOKEN = "TestToken"
     def UNSUCCESS_TOKEN_POSITION_EMPTY = "testEmpty"
-    def FIRST_NAME = "KULIK"
-    def LAST_NAME = "POUL"
-    def ACCOUNT_ID_IIS = "2039332784"
+
+    def ACCOUNT_ID_IIS = "12345"
     def ACCOUNT_ID = "1234"
     def ACCOUNT_TYPE = "Tinkoff"
     def ACCOUNT_TYPE_IIS = "TinkoffIis"
-    def accountIis = new Account(brokerAccountId: ACCOUNT_ID_IIS,
-            brokerAccountType: ACCOUNT_TYPE_IIS,
-            firstName: FIRST_NAME,
-            lastName: LAST_NAME,
-            token: TOKEN)
-    def payIn = new CurrencyOperation(id: "470419302",
-            dateOperation: LocalDateTime.now().minusDays(2),
+    def FIGI = "BBG0047315Y7"
+
+    def instrumentOperation = new InstrumentOperation(id: "22670232279",
+            currency: Currency.RUB,
+            dateOperation: LocalDateTime.of(2021, 2, 20,10,23),
+            operationType: "Buy",
+            course: 200.0,
+            quantity: 120,
+            payment: 22000.0,
+            status: "Done",
+            commissionValue: -4.07,
+            commissionCurrency: Currency.RUB,
+            figi: FIGI
+    )
+
+    def currenсyOperation = new CurrencyOperation(
+            id: "741987406",
+            currency: Currency.RUB,
+            dateOperation: LocalDateTime.of(2021, 1, 21,12,23),
             operationType: "PayIn",
             course: 0,
             quantity: 0,
-            payment: 1001,
+            payment: 22000.0,
             status: "Done",
             commissionValue: 0
     )
 
-    def buyStock = new InstrumentOperation(id: "22529360061",
-            dateOperation: LocalDateTime.now().minusDays(1),
-            operationType: "Buy",
-            course: 1000,
-            quantity: 1,
-            payment: 1000,
+    def currenсyOperationSep = new CurrencyOperation(
+            id: "741987406",
+            currency: Currency.RUB,
+            dateOperation: LocalDateTime.of(2020, 10, 21,12,23),
+            operationType: "PayIn",
+            course: 0,
+            quantity: 0,
+            payment: 2000.0,
             status: "Done",
-            commissionValue: -1,
-            figi: "BBG000C3NTN5"
+            commissionValue: 0
     )
-    def sellStock = new InstrumentOperation(id: "22529360061",
-            dateOperation: LocalDateTime.now(),
-            operationType: "Sell",
-            course: 1100,
-            quantity: 1,
-            payment: 1000,
-            status: "Done",
-            commissionValue: -2,
-            figi: 'BBG000C3NTN5'
-    )
+
     def expectedYield = new ExpectedYield(
-            currency: "USD",
-            value: 1000
+            currency: "RUB",
+            value: 2000
     )
     def averagePositionPrice = new AveragePositionPrice(
-            currency: "USD",
-            value: 100
-    )
-    def percantageInstrument = new PercentageInstrument(startDate: LocalDate.of(2020, 10, 01),
-            endDdate: LocalDate.of(2021, 02, 18),
-            period: 140,
-            payInAll: 1001.0,
-            payOutAll: 0.0,
-            comissionAll: 0.0,
-            currentSum: 1100.0,
-            percentProfit: "9.89%",
-            percentProfitYear: "25.78%"
+            currency: "RUB",
+            value: 220
     )
 
-    def position = new Position(figi: "BBG000C3NTN5",
-            ticker: "HOLX",
-            isin: "US4364401012",
+
+    def position = new Position(figi: FIGI,
+            ticker: "SBERP",
+            isin: "RU0009029557",
             instrumentType: "Stock",
-            balance: 1,
-            lots: 1,
+            balance: 120,
+            lots: 120,
             expectedYield: expectedYield,
             averagePositionPrice: averagePositionPrice,
-            name: "Hologic"
+            name: "Сбербанк России - привилегированные акции"
     )
 
-    def operationsList = new ArrayList<InstrumentOperation>(Arrays.asList(buyStock, sellStock))
-    def figiName = ["BBG000C3NTN5", "Hologic"]
+    def percantageInstrumentSeparate = new PercentageInstrument(startDate: LocalDate.of(2020, 10, 21),
+            endDdate: LocalDate.now(),
+            period: 191,
+            periodAvg: 105,
+            payInAll: 24000.0,
+            payOutAll: 0.0,
+            comissionAll: 0.0,
+            currentSum: 28400.0,
+            percentProfit: "18.33%",
+            percentProfitYear: "63.73%"
+    )
+    def percantageInstrument = new PercentageInstrument(startDate: LocalDate.of(2020, 10, 21),
+            endDdate: LocalDate.now(),
+            period: 191,
+            periodAvg: 190,
+            payInAll: 24000.0,
+            payOutAll: 0.0,
+            comissionAll: 0.0,
+            currentSum: 28400.0,
+            percentProfit: "18.33%",
+            percentProfitYear: "35.22%"
+    )
+    def accountDto = new AccountDto(brokerAccountId: ACCOUNT_ID,
+            brokerAccountType: ACCOUNT_TYPE)
+    def accountIisDto = new AccountDto(brokerAccountId: ACCOUNT_ID_IIS,
+            brokerAccountType: ACCOUNT_TYPE_IIS)
+
+
+
+    def instrumentOperationList = Collections.singletonList(instrumentOperation)
+    def currencyOperationList = new ArrayList<>(Arrays.asList(currenсyOperation, currenсyOperationSep))
+    def operationDto = new OperationDto(currencyOperationList: currencyOperationList,
+            instrumentOperationList: instrumentOperationList,
+            countLoadOperation: 2
+    )
     def response
 
-    private instrumentOperationRepository = Mock(InstrumentOperationRepository) {
-        getMinDate() >> LocalDateTime.of(2020, 10, 1, 1, 1)
-        findAll() >> operationsList
-        getUniqueFigi() >> Collections.singletonList(figiName.toArray())
-        findByFigiOrderByDateOperationAsc(_) >> operationsList
-    }
-    private currencyOperationRepository = Mock(CurrencyOperationRepository) {
-        findAll() >> Collections.singletonList(payIn)
-    }
+
     private investmentTinkoffService = Mock(InvestmentTinkoffService) {
+        getAccounts(TOKEN) >> new ArrayList<AccountDto>(Arrays.asList(accountDto, accountIisDto))
+        getAccounts(UNSUCCESS_TOKEN) >> new ArrayList<AccountDto>()
+        getAccounts(UNSUCCESS_TOKEN_POSITION_EMPTY) >> new ArrayList<AccountDto>(Arrays.asList(accountDto, accountIisDto))
         getPosition(ACCOUNT_ID_IIS, TOKEN) >> Collections.singletonList(position)
-        getPosition(ACCOUNT_ID, UNSUCCESS_TOKEN_POSITION_EMPTY) >> new ArrayList<Position>()
+        getPosition(_, UNSUCCESS_TOKEN_POSITION_EMPTY) >> new ArrayList<Position>()
+    }
+
+    private operationsService = Mock(OperationsService) {
+        getOperationsBetweenDate(_, _, TOKEN, ACCOUNT_TYPE_IIS, ACCOUNT_ID_IIS) >> operationDto
+        getOperationsBetweenDate(_, _, UNSUCCESS_TOKEN_POSITION_EMPTY, ACCOUNT_TYPE_IIS, ACCOUNT_ID_IIS) >> operationDto
     }
 
     private buyInstrumentMapper = Mock(BuyInstrumentMapper) {
@@ -120,26 +142,19 @@ class AnalyzePortfolioServiceImplTest extends Specification {
     private sellInstrumentMapper = Mock(SellInstrumentMapper) {
 
     }
-    private accountService = Mock(AccountService) {
-        getAccountId(TOKEN, _) >> ACCOUNT_ID_IIS
-        getAccountId(UNSUCCESS_TOKEN, _) >> ""
-        getAccountId(UNSUCCESS_TOKEN_POSITION_EMPTY, _) >> ACCOUNT_ID
-    }
 
     private AnalyzePortfolioServiceImpl analyzePortfolioServiceImpl = new AnalyzePortfolioServiceImpl(
             sellInstrumentMapper: sellInstrumentMapper,
             buyInstrumentMapper: buyInstrumentMapper,
             investmentTinkoffService: investmentTinkoffService,
-            instrumentOperationRepository: instrumentOperationRepository,
-            currencyOperationRepository: currencyOperationRepository,
-            accountService: accountService
+            operationsService: operationsService
     )
 
-    def "Analize portfolio all SUCCESS"() {
+    def "getReportAllDayAllInstrument SUCCESS"() {
         given:
 
         when:
-        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrument(TOKEN, ACCOUNT_TYPE_IIS)
+        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrument(TOKEN)
         then:
         response.reportInstrument == percantageInstrument
     }
@@ -148,7 +163,7 @@ class AnalyzePortfolioServiceImplTest extends Specification {
         given:
 
         when:
-        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrument(UNSUCCESS_TOKEN, ACCOUNT_TYPE)
+        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrument(UNSUCCESS_TOKEN)
         then:
         def e = thrown(NotFoundException)
         e.message == "account is empty"
@@ -158,9 +173,18 @@ class AnalyzePortfolioServiceImplTest extends Specification {
         given:
 
         when:
-        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrument(UNSUCCESS_TOKEN_POSITION_EMPTY, ACCOUNT_TYPE)
+        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrument(UNSUCCESS_TOKEN_POSITION_EMPTY)
         then:
         def e = thrown(NotFoundException)
         e.message == "positions is empty"
+    }
+
+    def "getReportAllDayAllInstrumentSeparatePayIn SUCCESS"() {
+        given:
+
+        when:
+        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrumentSeparatePayIn(TOKEN)
+        then:
+        response.reportInstrument == percantageInstrumentSeparate
     }
 }
