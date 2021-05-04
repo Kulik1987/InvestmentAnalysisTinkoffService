@@ -21,10 +21,6 @@ spring:
   flyway:
     check-location: false
 
-client:
-  tokenTest:
-  token:
-
 tcsbroker:
   url: https://api-invest.tinkoff.ru/openapi/
 
