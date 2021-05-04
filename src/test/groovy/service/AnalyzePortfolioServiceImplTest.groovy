@@ -154,7 +154,7 @@ class AnalyzePortfolioServiceImplTest extends Specification {
         given:
 
         when:
-        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrument(TOKEN)
+        response = analyzePortfolioServiceImpl.getTotalReport(TOKEN)
         then:
         response.reportInstrument == percantageInstrument
     }
@@ -163,7 +163,7 @@ class AnalyzePortfolioServiceImplTest extends Specification {
         given:
 
         when:
-        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrument(UNSUCCESS_TOKEN)
+        response = analyzePortfolioServiceImpl.getTotalReport(UNSUCCESS_TOKEN)
         then:
         def e = thrown(NotFoundException)
         e.message == "account is empty"
@@ -173,7 +173,7 @@ class AnalyzePortfolioServiceImplTest extends Specification {
         given:
 
         when:
-        response = analyzePortfolioServiceImpl.getReportAllDayAllInstrument(UNSUCCESS_TOKEN_POSITION_EMPTY)
+        response = analyzePortfolioServiceImpl.getTotalReport(UNSUCCESS_TOKEN_POSITION_EMPTY)
         then:
         def e = thrown(NotFoundException)
         e.message == "positions is empty"

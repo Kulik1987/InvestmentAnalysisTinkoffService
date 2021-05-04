@@ -8,7 +8,7 @@ public interface MessageHandler {
 
     SendMessage getToken(Long chatId, String token) throws NotFoundException;
 
-    SendMessage getAll(Long chatId) throws NotFoundException;
+    SendMessage getTotalReport(Long chatId) throws NotFoundException;
 
     SendMessage getAllSeparatePayIn(Long chatId) throws NotFoundException;
 

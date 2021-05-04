@@ -52,38 +52,39 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
 
 
     @Override
-    public AllMoneyReportDto getReportAllDayAllInstrument(String token) throws NotFoundException {
+    public TotalReportDto getTotalReport(String token) throws NotFoundException {
         String accountId = getAccountId(token);
 
         Period period = getPeriodDateAll();
         OperationDto operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
 
         List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
-        getOpenDayInvest(period, currencyOperations);
+        getCountDayOpenInvest(period, currencyOperations);
 
         PercentageInstrument percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN);
-        return new AllMoneyReportDto(percentageInstrument);
+        return new TotalReportDto(percentageInstrument);
     }
 
 
     @Override
-    public AllMoneyReportDto getReportAllDayAllInstrumentSeparatePayIn(String token) throws NotFoundException {
+    public TotalReportDto getReportAllDayAllInstrumentSeparatePayIn(String token) throws NotFoundException {
         String accountId = getAccountId(token);
 
         Period period = getPeriodDateAll();
         OperationDto operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
 
         List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
-        getOpenDayInvest(period, currencyOperations);
+        getCountDayOpenInvest(period, currencyOperations);
 
         PercentageInstrument percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN_SEPARATE);
-        return new AllMoneyReportDto(percentageInstrument);
+        return new TotalReportDto(percentageInstrument);
     }
 
     @Override
     public OneTickerCloseOperationReportDto getReportAllDayByTickerCloseOperation(String token, String ticker) throws NotFoundException {
         String accountId = getAccountId(token);
         Period period = getPeriodDateAll();
+        // костыль на баг тинька
         String tickerModify = "";
         if (TCSG.equals(ticker)) {
             tickerModify = TCS;
@@ -94,6 +95,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         } else {
             tickerModify = ticker;
         }
+        ////////////////////////////
         FigiNameDto figiNameDto = getNameInstrumentByFigi(tickerModify, token);
 
         OperationDto operationDto = getOperationsByFigi(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId, figiNameDto.getFigi());
@@ -108,9 +110,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return new OneTickerCloseOperationReportDto(reportInstrument);
     }
 
-
-
-    private void getOpenDayInvest(Period period, List<CurrencyOperation> currencyOperations) {
+    private void getCountDayOpenInvest(Period period, List<CurrencyOperation> currencyOperations) {
         LocalDateTime startDate = currencyOperations.stream().map(u -> u.getDateOperation()).min(LocalDateTime::compareTo).get();
         period.setStartDate(startDate);
         period.setDayOpen(DAYS.between(period.getStartDate(), period.getEndDate()));
@@ -144,9 +144,9 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
     @NotNull
     private PercentageInstrument getPercentageInstrument(String token, String accountId, Period
             period, List<CurrencyOperation> currencyOperations, String reportType) throws NotFoundException {
-        int payInRub = (int) getPayInRub(currencyOperations);
-        int payOutRub = (int) getPayOutRub(currencyOperations);
-        double comissionAll = getCommissionAll(currencyOperations);
+        int paySumInRub = (int) getSumPayInRub(currencyOperations);
+        int paySumOutRub = (int) getSumPayOutRub(currencyOperations);
+        double sumComissionAll = getSumCommissionAll(currencyOperations);
 
         List<Position> positionList = getPositionList(accountId, token);
         final double[] sumRubPortfolio = {0};
@@ -154,18 +154,18 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         final double[] sumEurPortfolio = {0};
 
         double allSumRubPortfolio = getAllSumRubPortfolio(positionList, sumRubPortfolio, sumUsdPortfolio, sumEurPortfolio);
-        double percentProfit = getPercentProfit(payInRub, allSumRubPortfolio);
+        double percentProfit = getPercentProfit(paySumInRub, allSumRubPortfolio);
         int avgDayMoneyOnAccount = 0;
         int dayOpenPortfolio = (int) DAYS.between(currencyOperations.get(currencyOperations.size() - 1).getDateOperation().toLocalDate(), LocalDate.now());
 
         if (ALL_PAY_IN_SEPARATE.equals(reportType)) {
-            avgDayMoneyOnAccount = (int) getDayOpenPortfolioAvg(currencyOperations, payInRub);
+            avgDayMoneyOnAccount = (int) getDayOpenPortfolioAvg(currencyOperations, paySumInRub);
         } else if (ALL_PAY_IN.equals(reportType)) {
             avgDayMoneyOnAccount = (int) period.getDayOpen();
         }
-        double percentProfitYear = getPercentProfitYear(payInRub, allSumRubPortfolio, avgDayMoneyOnAccount);
+        double percentProfitYear = getPercentProfitYear(paySumInRub, allSumRubPortfolio, avgDayMoneyOnAccount);
 
-        PercentageInstrument percentageInstrument = new PercentageInstrument(period.getStartDate().toLocalDate(), period.getEndDate().toLocalDate(), String.valueOf(dayOpenPortfolio), String.valueOf(avgDayMoneyOnAccount), payInRub, payOutRub, comissionAll, Math.round(allSumRubPortfolio * 100d) / 100d, String.valueOf(Math.round(percentProfit * 100d) / 100d) + "%", String.valueOf(Math.round(percentProfitYear * 100d) / 100d) + "%");
+        PercentageInstrument percentageInstrument = new PercentageInstrument(period.getStartDate().toLocalDate(), period.getEndDate().toLocalDate(), String.valueOf(dayOpenPortfolio), String.valueOf(avgDayMoneyOnAccount), paySumInRub, paySumOutRub, sumComissionAll, Math.round(allSumRubPortfolio * 100d) / 100d, String.valueOf(Math.round(percentProfit * 100d) / 100d) + "%", String.valueOf(Math.round(percentProfitYear * 100d) / 100d) + "%");
         return percentageInstrument;
     }
 
@@ -209,15 +209,15 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         }).sum();
     }
 
-    private double getPayInRub(List<CurrencyOperation> currencyOperations) {
+    private double getSumPayInRub(List<CurrencyOperation> currencyOperations) {
         return currencyOperations.stream().filter(co -> OperationType.PAY_IN.getDescription().equals(co.getOperationType())).mapToDouble(CurrencyOperation::getPayment).sum();
     }
 
-    private double getPayOutRub(List<CurrencyOperation> currencyOperations) {
+    private double getSumPayOutRub(List<CurrencyOperation> currencyOperations) {
         return currencyOperations.stream().filter(co -> OperationType.PAY_OUT.getDescription().equals(co.getOperationType())).mapToDouble(CurrencyOperation::getPayment).sum();
     }
 
-    private double getCommissionAll(List<CurrencyOperation> currencyOperations) {
+    private double getSumCommissionAll(List<CurrencyOperation> currencyOperations) {
         return currencyOperations.stream()
                 .filter(co -> (OperationType.SERVICE_COMMISSION.getDescription().equals(co.getOperationType()) || (OperationType.BROKER_COMISSION.getDescription().equals(co.getOperationType()))))
                 .mapToDouble(CurrencyOperation::getPayment).sum();

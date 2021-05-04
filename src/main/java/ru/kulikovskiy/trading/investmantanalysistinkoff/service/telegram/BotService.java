@@ -49,7 +49,7 @@ public class BotService extends TelegramLongPollingBot {
             } else if (inputText.get(0).equals(TOKEN)) {
                 message = messageHandler.getToken(chatId, inputText.get(1));
             } else if (inputText.get(0).equals(ALL)) {
-                message = messageHandler.getAll(chatId);
+                message = messageHandler.getTotalReport(chatId);
             } else if (inputText.get(0).equals(SEPARATE_PAY_IN)) {
                 message = messageHandler.getAllSeparatePayIn(chatId);
             } else if (inputText.get(0).equals(TICKER_CLOSE_OPERATION)) {

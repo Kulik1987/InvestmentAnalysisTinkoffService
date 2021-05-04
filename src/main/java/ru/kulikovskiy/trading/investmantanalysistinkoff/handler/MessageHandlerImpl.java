@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.AllMoneyReportDto;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.TotalReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OneTickerCloseOperationReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AccountService;
@@ -52,6 +52,7 @@ MessageHandlerImpl implements MessageHandler {
     public SendMessage getToken(Long chatId, String token) throws NotFoundException {
         checkEmptyToken(token);
         accountService.saveToken(token, String.valueOf(chatId));
+
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Токен успешно добавлен. Теперь можно получать отчеты!");
@@ -63,7 +64,7 @@ MessageHandlerImpl implements MessageHandler {
     public SendMessage getAllSeparatePayIn(Long chatId) throws NotFoundException {
         String token = getToken(chatId);
         checkEmptyToken(token);
-        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrumentSeparatePayIn(token);
+        TotalReportDto response = analyzePortfolioService.getReportAllDayAllInstrumentSeparatePayIn(token);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
@@ -84,19 +85,19 @@ MessageHandlerImpl implements MessageHandler {
     }
 
     @Override
-    public SendMessage getAll(Long chatId) throws NotFoundException {
+    public SendMessage getTotalReport(Long chatId) throws NotFoundException {
         String token = getToken(chatId);
         checkEmptyToken(token);
-        AllMoneyReportDto response = analyzePortfolioService.getReportAllDayAllInstrument(token);
+        TotalReportDto response = analyzePortfolioService.getTotalReport(token);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText(TITLE + getTextAllPayIn(response));
+        message.setText(TITLE + getTextTotalReport(response));
         return message;
     }
 
     @NotNull
-    private String getTextAllPayIn(AllMoneyReportDto response) {
+    private String getTextTotalReport(TotalReportDto response) {
         String text =
                 START_DATE + response.getReportInstrument().getStartDate() + "\n" +
                         END_DATE + response.getReportInstrument().getEndDdate() + "\n" +
@@ -110,7 +111,7 @@ MessageHandlerImpl implements MessageHandler {
         return text;
     }
     @NotNull
-    private String getTextSeparatePayIn(AllMoneyReportDto response) {
+    private String getTextSeparatePayIn(TotalReportDto response) {
         String text =
                 START_DATE + response.getReportInstrument().getStartDate() + "\n" +
                         END_DATE + response.getReportInstrument().getEndDdate() + "\n" +
