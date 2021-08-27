@@ -12,6 +12,9 @@ import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundExcept
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AccountService;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AnalyzePortfolioService;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import static ru.kulikovskiy.trading.HazelcastConst.TOKENS;
 import static ru.kulikovskiy.trading.Util.checkEmptyToken;
 import static ru.kulikovskiy.trading.investmantanalysistinkoff.TelegramConst.*;
@@ -42,9 +45,10 @@ MessageHandlerImpl implements MessageHandler {
                 "/tickerCloseOper <ticker> - выводит информацию по закрытым операциям по 1 тикеру " + "\n" +
                 "" + "\n" + "\n" +
                 "<> - указывает что это параметр. При наборе команды ставить эти символы не нужно. Нарпимер для получения " +
-                        "информации по тикеру надо набрать команду /tickerCloseOper JD" +
+                "информации по тикеру надо набрать команду /tickerCloseOper JD" +
                 "\n" + "\n" +
-                "Пока я в начале пути анализа доходности инвестиций, но со временем, обязательно многому научусь" );
+                "Пока я в начале пути анализа доходности инвестиций, но со временем, обязательно многому научусь" +"\n" +
+                "Обратная связь: @pkulikovskiy");
         return message;
     }
 
@@ -64,11 +68,11 @@ MessageHandlerImpl implements MessageHandler {
     public SendMessage getAllSeparatePayIn(Long chatId) throws NotFoundException {
         String token = getToken(chatId);
         checkEmptyToken(token);
-        TotalReportDto response = analyzePortfolioService.getReportAllDayAllInstrumentSeparatePayIn(token);
-
+        List<TotalReportDto> response = analyzePortfolioService.getReportAllDayAllInstrumentSeparatePayIn(token);
+        String resp = response.stream().map(textReport -> getTextSeparatePayIn(textReport)).collect(Collectors.joining());
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText(TITLE_AVG + getTextSeparatePayIn(response));
+        message.setText(TITLE_AVG + resp);
         return message;
     }
 
@@ -76,11 +80,11 @@ MessageHandlerImpl implements MessageHandler {
     public SendMessage getTickerCloseOper(Long chatId, String ticker) throws NotFoundException {
         String token = getToken(chatId);
         checkEmptyToken(token);
-        OneTickerCloseOperationReportDto response = analyzePortfolioService.getReportAllDayByTickerCloseOperation(token, ticker);
-
+        List<OneTickerCloseOperationReportDto> response = analyzePortfolioService.getReportAllDayByTickerCloseOperation(token, ticker);
+        String resp = response.stream().map(textReport -> getTextByTicker(textReport)).collect(Collectors.joining());
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText(TITLE_FIGI + getTextByTicker(response));
+        message.setText(TITLE_FIGI + resp);
         return message;
     }
 
@@ -88,11 +92,12 @@ MessageHandlerImpl implements MessageHandler {
     public SendMessage getTotalReport(Long chatId) throws NotFoundException {
         String token = getToken(chatId);
         checkEmptyToken(token);
-        TotalReportDto response = analyzePortfolioService.getTotalReport(token);
+        List<TotalReportDto> response = analyzePortfolioService.getTotalReport(token);
+        String resp = response.stream().map(testReport -> getTextTotalReport(testReport)).collect(Collectors.joining());
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText(TITLE + getTextTotalReport(response));
+        message.setText(TITLE + resp);
         return message;
     }
 
@@ -107,9 +112,11 @@ MessageHandlerImpl implements MessageHandler {
                         COMMISSION_ALL + response.getReportInstrument().getComissionAll() + "\n" +
                         CURRENT_SUM + response.getReportInstrument().getCurrentSum() + "\n" +
                         PERCENT + response.getReportInstrument().getPercentProfit() + "\n" +
-                        PERCENT_YEAR + response.getReportInstrument().getPercentProfitYear();
+                        PERCENT_YEAR + response.getReportInstrument().getPercentProfitYear()
+                        + "\n" + "\n";
         return text;
     }
+
     @NotNull
     private String getTextSeparatePayIn(TotalReportDto response) {
         String text =
@@ -122,7 +129,8 @@ MessageHandlerImpl implements MessageHandler {
                         COMMISSION_ALL + response.getReportInstrument().getComissionAll() + "\n" +
                         CURRENT_SUM + response.getReportInstrument().getCurrentSum() + "\n" +
                         PERCENT + response.getReportInstrument().getPercentProfit() + "\n" +
-                        PERCENT_YEAR + response.getReportInstrument().getPercentProfitYear();
+                        PERCENT_YEAR + response.getReportInstrument().getPercentProfitYear()
+                        + "\n" + "\n";
         return text;
     }
 
@@ -134,7 +142,8 @@ MessageHandlerImpl implements MessageHandler {
                         QUANTITY + response.getReportInstrument().getQuantityAll() + "\n" +
                         PERIOD_AVG + response.getReportInstrument().getAverageCountDay() + "\n" +
                         PROFIT_AVG + response.getReportInstrument().getAverageProfit() + "\n" +
-                        PERCENT_AVG_TICKER + response.getReportInstrument().getAveragePercentProfit();
+                        PERCENT_AVG_TICKER + response.getReportInstrument().getAveragePercentProfit()
+                        + "\n" + "\n";
         return text;
     }
 

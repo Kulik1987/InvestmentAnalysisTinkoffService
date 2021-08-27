@@ -1,6 +1,7 @@
 package ru.kulikovskiy.trading.investmantanalysistinkoff.service;
 
 import com.hazelcast.core.HazelcastInstance;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,6 +29,7 @@ import static ru.kulikovskiy.trading.DateUtil.getStringFromLocalDateTime;
 import static ru.kulikovskiy.trading.HazelcastConst.CURRENCY;
 import static ru.kulikovskiy.trading.investmantanalysistinkoff.Const.*;
 
+@Slf4j
 @Service
 public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
     private static final String ALL_PAY_IN = "allPayIn";
@@ -52,40 +54,65 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
 
 
     @Override
-    public TotalReportDto getTotalReport(String token) throws NotFoundException {
-        String accountId = getAccountId(token);
+    public List<TotalReportDto> getTotalReport(String token) throws NotFoundException {
+        List<String> accountIdList = getAccountId(token);
 
         Period period = getPeriodDateAll();
-        OperationDto operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
+        return accountIdList.stream().map(accountId -> {
+            OperationDto operationDto = null;
+            try {
+                operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
+            } catch (NotFoundException e) {
+                e.printStackTrace();
+            }
 
-        List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
-        getCountDayOpenInvest(period, currencyOperations);
+            List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
+            getCountDayOpenInvest(period, currencyOperations);
 
-        PercentageInstrument percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN);
-        return new TotalReportDto(percentageInstrument);
+            PercentageInstrument percentageInstrument = null;
+            try {
+                percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN);
+            } catch (NotFoundException e) {
+                e.printStackTrace();
+            }
+            return new TotalReportDto(percentageInstrument);
+        }).collect(Collectors.toList());
     }
 
 
     @Override
-    public TotalReportDto getReportAllDayAllInstrumentSeparatePayIn(String token) throws NotFoundException {
-        String accountId = getAccountId(token);
+    public List<TotalReportDto> getReportAllDayAllInstrumentSeparatePayIn(String token) throws NotFoundException {
+        List<String> accountIdList = getAccountId(token);
 
         Period period = getPeriodDateAll();
-        OperationDto operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
 
-        List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
-        getCountDayOpenInvest(period, currencyOperations);
+        return accountIdList.stream().map(accountId -> {
+            OperationDto operationDto = null;
+            try {
+                operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
+            } catch (NotFoundException e) {
+                e.printStackTrace();
+            }
 
-        PercentageInstrument percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN_SEPARATE);
-        return new TotalReportDto(percentageInstrument);
+            List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
+            getCountDayOpenInvest(period, currencyOperations);
+
+            PercentageInstrument percentageInstrument = null;
+            try {
+                percentageInstrument = getPercentageInstrument(token, accountId, period, currencyOperations, ALL_PAY_IN_SEPARATE);
+            } catch (NotFoundException e) {
+                e.printStackTrace();
+            }
+            return new TotalReportDto(percentageInstrument);
+        }).collect(Collectors.toList());
     }
 
     @Override
-    public OneTickerCloseOperationReportDto getReportAllDayByTickerCloseOperation(String token, String ticker) throws NotFoundException {
-        String accountId = getAccountId(token);
+    public List<OneTickerCloseOperationReportDto> getReportAllDayByTickerCloseOperation(String token, String ticker) throws NotFoundException {
+        List<String> accountIdList = getAccountId(token);
         Period period = getPeriodDateAll();
         // костыль на баг тинька
-        String tickerModify = "";
+        String tickerModify;
         if (TCSG.equals(ticker)) {
             tickerModify = TCS;
             hazelcastInstance.getMap(CURRENCY).put(TCS, RUB);
@@ -98,16 +125,27 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         ////////////////////////////
         FigiNameDto figiNameDto = getNameInstrumentByFigi(tickerModify, token);
 
-        OperationDto operationDto = getOperationsByFigi(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId, figiNameDto.getFigi());
-        List<InstrumentOperation> instrumentOperationList = operationDto.getInstrumentOperationList();
+        return accountIdList.stream().map(accountId -> {
+            OperationDto operationDto = null;
+            try {
+                operationDto = getOperationsByFigi(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId, figiNameDto.getFigi());
+            } catch (NotFoundException e) {
+                e.printStackTrace();
+            }
+            List<InstrumentOperation> instrumentOperationList = operationDto.getInstrumentOperationList();
 
-        List<SellInstrument> sellInstruments = getSellInstruments(instrumentOperationList, tickerModify);
-        List<BuyInstrument> buyInstruments = getBuyOperationByFigi(instrumentOperationList);
+            List<SellInstrument> sellInstruments = null;
+            try {
+                sellInstruments = getSellInstruments(instrumentOperationList, tickerModify);
+            } catch (NotFoundException e) {
+                e.printStackTrace();
+            }
+            List<BuyInstrument> buyInstruments = getBuyOperationByFigi(instrumentOperationList);
 
-        TradeInstrument tradeInstrument = getTradeInstrument(figiNameDto.getFigi(), figiNameDto.getName(), sellInstruments, buyInstruments);
+            TradeInstrument tradeInstrument = getTradeInstrument(figiNameDto.getFigi(), figiNameDto.getName(), sellInstruments, buyInstruments);
 
-        ReportInstrument reportInstrument = setPercantageByInstrument(tradeInstrument.getSellInstrument(), ticker, tradeInstrument.getName());
-        return new OneTickerCloseOperationReportDto(reportInstrument);
+            ReportInstrument reportInstrument = setPercantageByInstrument(tradeInstrument.getSellInstrument(), ticker, tradeInstrument.getName());
+            return new OneTickerCloseOperationReportDto(reportInstrument);}).collect(Collectors.toList());
     }
 
     private void getCountDayOpenInvest(Period period, List<CurrencyOperation> currencyOperations) {
@@ -169,12 +207,12 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return percentageInstrument;
     }
 
-    private String getAccountId(String token) throws NotFoundException {
+    private List<String> getAccountId(String token) throws NotFoundException {
         List<AccountDto> accounts = investmentTinkoffService.getAccounts(token);
-        if ((accounts == null) || (accounts.isEmpty())){
+        if ((accounts == null) || (accounts.isEmpty())) {
             throw new NotFoundException("account is empty");
         }
-        return accounts.stream().filter(a -> BROKER_TYPE.equals(a.getBrokerAccountType())).findFirst().get().getBrokerAccountId();
+        return accounts.stream().map(a -> a.getBrokerAccountId()).collect(Collectors.toList());
     }
 
     @NotNull
@@ -236,7 +274,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
 
     private Period getPeriodDateAll() {
         Period period = new Period();
-        LocalDateTime minDate = LocalDateTime.now().minusYears(5);
+        LocalDateTime minDate = LocalDateTime.now().minusYears(10);
         LocalDateTime maxDate = LocalDateTime.now();
 
         period.setStartDate(minDate);
@@ -248,7 +286,14 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
             maxDate, @NotNull LocalDateTime minDate, @NotNull String accountId) throws NotFoundException {
         String startPeriod = getStringFromLocalDateTime(minDate);
         String endPeriod = getStringFromLocalDateTime(maxDate);
-        return operationsService.getOperationsBetweenDate(startPeriod, endPeriod, token, brokerType, accountId);
+        OperationDto operationDto = new OperationDto();
+        try {
+            operationDto = operationsService.getOperationsBetweenDate(startPeriod, endPeriod, token, brokerType, accountId);
+            return operationDto;
+        } catch(NotFoundException e) {
+            log.info("operation not found for accountId=" + accountId);
+        }
+        return operationDto;
     }
 
     private double getCurrentRateInstrument(Position position) {

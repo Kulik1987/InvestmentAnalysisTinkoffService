@@ -4,10 +4,12 @@ import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.TotalReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OneTickerCloseOperationReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
 
+import java.util.List;
+
 public interface AnalyzePortfolioService {
-    TotalReportDto getTotalReport(String token) throws NotFoundException;
+    List<TotalReportDto> getTotalReport(String token) throws NotFoundException;
 
-    TotalReportDto getReportAllDayAllInstrumentSeparatePayIn(String token) throws NotFoundException;
+    List<TotalReportDto> getReportAllDayAllInstrumentSeparatePayIn(String token) throws NotFoundException;
 
-    OneTickerCloseOperationReportDto getReportAllDayByTickerCloseOperation(String token, String ticker) throws NotFoundException;
+    List<OneTickerCloseOperationReportDto> getReportAllDayByTickerCloseOperation(String token, String ticker) throws NotFoundException;
 }
