@@ -59,7 +59,7 @@ public class OperationsServiceImpl implements OperationsService {
     }
 
     @Override
-    public OperationDto getOperationsBetweenDateByFigi(String startPeriod, String endPeriod, @NotNull String token, String brokerType, @NotNull String accountId, @NotNull String figi) {
+    public OperationDto getOperationsBetweenDateByFigi(String startPeriod, String endPeriod, @NotNull String token, String brokerType, @NotNull String accountId, @NotNull String figi) throws NotFoundException {
         OperationDto operationDto = new OperationDto();
         if (StringUtil.isEmpty(accountId)) {
             operationDto.setErrorMessage("accountId is empty");
@@ -67,6 +67,9 @@ public class OperationsServiceImpl implements OperationsService {
         }
 
         List<Operations> operationsList = investmentTinkoffService.getOperationsByFigi(startPeriod, endPeriod, accountId, token, figi);
+        if (operationsList.size() == 0) {
+            throw new NotFoundException("0 operation FIGI");
+        }
 
         return getOperationDto(operationDto, operationsList);
     }

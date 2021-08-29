@@ -130,7 +130,9 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
             try {
                 operationDto = getOperationsByFigi(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId, figiNameDto.getFigi());
             } catch (NotFoundException e) {
-                e.printStackTrace();
+                OneTickerCloseOperationReportDto response = new OneTickerCloseOperationReportDto();
+                response.setErrorMessage("0 operation FIGI to this account");
+                return response;
             }
             List<InstrumentOperation> instrumentOperationList = operationDto.getInstrumentOperationList();
 
@@ -138,7 +140,9 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
             try {
                 sellInstruments = getSellInstruments(instrumentOperationList, tickerModify);
             } catch (NotFoundException e) {
-                e.printStackTrace();
+                OneTickerCloseOperationReportDto response = new OneTickerCloseOperationReportDto();
+                response.setErrorMessage("0 operation FIGI");
+                return response;
             }
             List<BuyInstrument> buyInstruments = getBuyOperationByFigi(instrumentOperationList);
 
@@ -332,6 +336,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         List<SellInstrumentPercentage> sellInstrumentsPercent = new ArrayList<>();
         sellInstrumentList.stream().sorted(Comparator.comparing(SellInstrument::getEndDate)).forEach(sim -> {
             int version = 0;
+            // аналогично надо реализовать для payin payout
             do {
                 BuyInstrument buyInstrument = buyInstruments.get(0);
                 int sellQuantity = sim.getQuantityTemp();

@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.TotalReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.OneTickerCloseOperationReportDto;
+import ru.kulikovskiy.trading.investmantanalysistinkoff.dto.TotalReportDto;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.exception.NotFoundException;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AccountService;
 import ru.kulikovskiy.trading.investmantanalysistinkoff.service.AnalyzePortfolioService;
@@ -47,7 +47,7 @@ MessageHandlerImpl implements MessageHandler {
                 "<> - указывает что это параметр. При наборе команды ставить эти символы не нужно. Нарпимер для получения " +
                 "информации по тикеру надо набрать команду /tickerCloseOper JD" +
                 "\n" + "\n" +
-                "Пока я в начале пути анализа доходности инвестиций, но со временем, обязательно многому научусь" +"\n" +
+                "Пока я в начале пути анализа доходности инвестиций, но со временем, обязательно многому научусь" + "\n" +
                 "Обратная связь: @pkulikovskiy");
         return message;
     }
@@ -136,14 +136,19 @@ MessageHandlerImpl implements MessageHandler {
 
     @NotNull
     private String getTextByTicker(OneTickerCloseOperationReportDto response) {
-        String text =
-                TICKER + response.getReportInstrument().getFigi() + "\n" +
-                        NAME + response.getReportInstrument().getNameInstrument() + "\n" +
-                        QUANTITY + response.getReportInstrument().getQuantityAll() + "\n" +
-                        PERIOD_AVG + response.getReportInstrument().getAverageCountDay() + "\n" +
-                        PROFIT_AVG + response.getReportInstrument().getAverageProfit() + "\n" +
-                        PERCENT_AVG_TICKER + response.getReportInstrument().getAveragePercentProfit()
-                        + "\n" + "\n";
+        String text = "";
+        if (response.getErrorMessage() != null) {
+            text = "Error: " + response.getErrorMessage() + "\n\n";
+        } else {
+            text =
+                    TICKER + response.getReportInstrument().getFigi() + "\n" +
+                            NAME + response.getReportInstrument().getNameInstrument() + "\n" +
+                            QUANTITY + response.getReportInstrument().getQuantityAll() + "\n" +
+                            PERIOD_AVG + response.getReportInstrument().getAverageCountDay() + "\n" +
+                            PROFIT_AVG + response.getReportInstrument().getAverageProfit() + "\n" +
+                            PERCENT_AVG_TICKER + response.getReportInstrument().getAveragePercentProfit()
+                            + "\n" + "\n";
+        }
         return text;
     }
 
