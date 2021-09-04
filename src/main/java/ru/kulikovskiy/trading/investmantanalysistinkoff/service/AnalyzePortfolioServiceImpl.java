@@ -63,7 +63,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
             try {
                 operationDto = getOperations(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId);
             } catch (NotFoundException e) {
-                e.printStackTrace();
+                log.info("oparation does not exist");
             }
 
             List<CurrencyOperation> currencyOperations = operationDto.getCurrencyOperationList();
@@ -126,7 +126,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         FigiNameDto figiNameDto = getNameInstrumentByFigi(tickerModify, token);
 
         return accountIdList.stream().map(accountId -> {
-            OperationDto operationDto = null;
+            OperationDto operationDto;
             try {
                 operationDto = getOperationsByFigi(token, BROKER_TYPE, period.getEndDate(), period.getStartDate(), accountId, figiNameDto.getFigi());
             } catch (NotFoundException e) {
@@ -136,7 +136,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
             }
             List<InstrumentOperation> instrumentOperationList = operationDto.getInstrumentOperationList();
 
-            List<SellInstrument> sellInstruments = null;
+            List<SellInstrument> sellInstruments;
             try {
                 sellInstruments = getSellInstruments(instrumentOperationList, tickerModify);
             } catch (NotFoundException e) {
@@ -153,7 +153,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
     }
 
     private void getCountDayOpenInvest(Period period, List<CurrencyOperation> currencyOperations) {
-        LocalDateTime startDate = currencyOperations.stream().map(u -> u.getDateOperation()).min(LocalDateTime::compareTo).get();
+        LocalDateTime startDate = currencyOperations.stream().map(CurrencyOperation::getDateOperation).min(LocalDateTime::compareTo).get();
         period.setStartDate(startDate);
         period.setDayOpen(DAYS.between(period.getStartDate(), period.getEndDate()));
     }
@@ -188,7 +188,9 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
             period, List<CurrencyOperation> currencyOperations, String reportType) throws NotFoundException {
         int paySumInRub = (int) getSumPayInRub(currencyOperations);
         int paySumOutRub = (int) getSumPayOutRub(currencyOperations);
+        int payToBill = paySumInRub + paySumOutRub;
         double sumComissionAll = getSumCommissionAll(currencyOperations);
+
 
         List<Position> positionList = getPositionList(accountId, token);
         final double[] sumRubPortfolio = {0};
@@ -196,19 +198,19 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         final double[] sumEurPortfolio = {0};
 
         double allSumRubPortfolio = getAllSumRubPortfolio(positionList, sumRubPortfolio, sumUsdPortfolio, sumEurPortfolio);
-        double percentProfit = getPercentProfit(paySumInRub, allSumRubPortfolio);
+        double percentProfit = getPercentProfit(payToBill, allSumRubPortfolio);
         int avgDayMoneyOnAccount = 0;
         int dayOpenPortfolio = (int) DAYS.between(currencyOperations.get(currencyOperations.size() - 1).getDateOperation().toLocalDate(), LocalDate.now());
 
         if (ALL_PAY_IN_SEPARATE.equals(reportType)) {
+            // тут меняем расчет. на каждый payOut надо брать PayIn считать между ними кол-во дней между PayIn и PayOut и считать сумму
             avgDayMoneyOnAccount = (int) getDayOpenPortfolioAvg(currencyOperations, paySumInRub);
         } else if (ALL_PAY_IN.equals(reportType)) {
             avgDayMoneyOnAccount = (int) period.getDayOpen();
         }
-        double percentProfitYear = getPercentProfitYear(paySumInRub, allSumRubPortfolio, avgDayMoneyOnAccount);
+        double percentProfitYear = getPercentProfitYear(payToBill, allSumRubPortfolio, avgDayMoneyOnAccount);
 
-        PercentageInstrument percentageInstrument = new PercentageInstrument(period.getStartDate().toLocalDate(), period.getEndDate().toLocalDate(), String.valueOf(dayOpenPortfolio), String.valueOf(avgDayMoneyOnAccount), paySumInRub, paySumOutRub, sumComissionAll, Math.round(allSumRubPortfolio * 100d) / 100d, String.valueOf(Math.round(percentProfit * 100d) / 100d) + "%", String.valueOf(Math.round(percentProfitYear * 100d) / 100d) + "%");
-        return percentageInstrument;
+        return new PercentageInstrument(period.getStartDate().toLocalDate(), period.getEndDate().toLocalDate(), String.valueOf(dayOpenPortfolio), String.valueOf(avgDayMoneyOnAccount), paySumInRub, paySumOutRub, sumComissionAll, Math.round(allSumRubPortfolio * 100d) / 100d, String.valueOf(Math.round(percentProfit * 100d) / 100d) + "%", String.valueOf(Math.round(percentProfitYear * 100d) / 100d) + "%");
     }
 
     private List<String> getAccountId(String token) throws NotFoundException {
@@ -216,7 +218,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         if ((accounts == null) || (accounts.isEmpty())) {
             throw new NotFoundException("account is empty");
         }
-        return accounts.stream().map(a -> a.getBrokerAccountId()).collect(Collectors.toList());
+        return accounts.stream().map(AccountDto::getBrokerAccountId).collect(Collectors.toList());
     }
 
     @NotNull
@@ -240,15 +242,116 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return sellInstruments;
     }
 
-    private double getPercentProfitYear(double payInRub, double allSumRubPortfolio, double dayOpenPortfolioAvg) {
-        return (allSumRubPortfolio / payInRub - 1) * 100 * 365 / dayOpenPortfolioAvg;
+    private double getPercentProfitYear(double payToBill, double allSumRubPortfolio, double dayOpenPortfolioAvg) {
+        return (allSumRubPortfolio /payToBill  - 1) * 100 * 365 / dayOpenPortfolioAvg;
     }
 
     private double getDayOpenPortfolioAvg(List<CurrencyOperation> currencyOperations, double payInRub) {
+        // создать 1 запись currenncyOperation подарок тинька акция яндекс
+        CurrencyOperation presentCurrencyOperation = new CurrencyOperation();
+        presentCurrencyOperation.setDateOperation(LocalDateTime.of(2020, 8, 31, 18, 12,00));
+        presentCurrencyOperation.setPayment(5000);
+        currencyOperations.add(presentCurrencyOperation);
+        presentCurrencyOperation.setOperationType(OperationType.PAY_IN.getDescription());
+        /////////////
+        List<CurrencyOperation> currencyOperationPayIn = currencyOperations.stream().filter(co -> OperationType.PAY_IN.getDescription().equals(co.getOperationType())).sorted(Comparator.comparing(CurrencyOperation::getDateOperation)).collect(Collectors.toList());
+        List<CurrencyOperation> currencyOperationPayOut = currencyOperations.stream().filter(co -> OperationType.PAY_OUT.getDescription().equals(co.getOperationType())).sorted(Comparator.comparing(CurrencyOperation::getDateOperation)).collect(Collectors.toList());
+        double sumPayOut = currencyOperationPayOut.stream().mapToDouble(e-> e.getPayment()).sum();
+        double sumPayIn = currencyOperationPayIn.stream().mapToDouble(e->e.getPayment()).sum();
+        return currencyOperationPayIn.stream().filter(e-> e.getPayment()>0).sorted(Comparator.comparing(CurrencyOperation::getDateOperation)).mapToDouble(sim -> {
+            double sum = 0;
+            if (currencyOperationPayOut.size() > 0) {
+                sim.setPaymentTemp(sim.getPayment());
+                do {
+                    double pay = sim.getPaymentTemp();
+                    CurrencyOperation payOut = currencyOperationPayOut.get(0);
+                    double absPaymentPayOut = Math.abs(payOut.getPayment());
+                    if (pay == absPaymentPayOut) {
+                        long days = DAYS.between(sim.getDateOperation(), payOut.getDateOperation());
+                        if (days == 0) {
+                            days = 1;
+                        }
+                        sum = sum + days * pay / payInRub;
+                        currencyOperationPayOut.remove(0);
+                        sim.setPaymentTemp(0);
+                    } else if (pay < absPaymentPayOut) {
+                        long days = DAYS.between(sim.getDateOperation(), payOut.getDateOperation());
+                        if (days == 0) {
+                            days = 1;
+                        }
+                        sum = sum + days * pay / payInRub;
+                        payOut.setPayment((absPaymentPayOut - pay)*(-1));
+                        currencyOperationPayOut.set(0,payOut);
+                        sim.setPaymentTemp(0);
+                    } else {
+                        long days = DAYS.between(sim.getDateOperation(), payOut.getDateOperation());
+                        if (days == 0) {
+                            days = 1;
+                        }
+                        sum = sum + days * absPaymentPayOut / payInRub;
+                        currencyOperationPayOut.remove(0);
+                        sim.setPaymentTemp(pay - absPaymentPayOut);
+                    }
+                } while ((sim.getPaymentTemp() > 0) && (currencyOperationPayOut.size() > 0));
+                if( currencyOperationPayOut.stream().count() == 0) {
+                    long days = DAYS.between(sim.getDateOperation(), LocalDateTime.now());
+                    sum = sum + days * sim.getPaymentTemp() / payInRub;
+                }
+            } else {
+                long days = DAYS.between(sim.getDateOperation(), LocalDateTime.now());
+                sum = days * sim.getPayment() / payInRub;
+            }
+            return sum;
+        }).sum();
+/*
         return currencyOperations.stream().filter(co -> OperationType.PAY_IN.getDescription().equals(co.getOperationType())).mapToDouble(o -> {
             long days = DAYS.between(o.getDateOperation(), LocalDateTime.now());
             return days * o.getPayment() / payInRub;
-        }).sum();
+        }).sum();*/
+    }
+
+    private List<SellInstrumentPercentage> getPercantagePayList
+            (List<BuyInstrument> buyInstruments, List<SellInstrument> sellInstrumentList) {
+        List<SellInstrumentPercentage> sellInstrumentsPercent = new ArrayList<>();
+        sellInstrumentList.stream().sorted(Comparator.comparing(SellInstrument::getEndDate)).forEach(sim -> {
+            int version = 0;
+            // аналогично надо реализовать для payin payout
+            do {
+                BuyInstrument buyInstrument = buyInstruments.get(0);
+                int sellQuantity = sim.getQuantityTemp();
+                if (sellQuantity == buyInstrument.getQuantityPortfolio()) {
+                    SellInstrumentPercentage sellInstrument = getPercantage(sim, buyInstrument);
+                    sellInstrument.setQuantitySell(buyInstrument.getQuantityPortfolio());
+                    sellInstrument.setVersion(version);
+                    sellInstrumentsPercent.add(sellInstrument);
+
+                    buyInstruments.remove(0);
+                    sim.setQuantityTemp(0);
+                    version++;
+
+                } else if (sellQuantity < buyInstrument.getQuantityPortfolio()) {
+                    SellInstrumentPercentage sellInstrument = getPercantage(sim, buyInstrument);
+                    sellInstrument.setVersion(version);
+                    sellInstrumentsPercent.add(sellInstrument);
+
+                    buyInstrument.setQuantityPortfolio(buyInstrument.getQuantityPortfolio() - sellQuantity);
+                    buyInstruments.set(0, buyInstrument);
+
+                    sim.setQuantityTemp(0);
+                    version++;
+                } else {
+                    SellInstrumentPercentage sellInstrument = getPercantage(sim, buyInstrument);
+                    sellInstrument.setQuantitySell(buyInstrument.getQuantityPortfolio());
+
+                    sellInstrumentsPercent.add(sellInstrument);
+                    buyInstruments.remove(0);
+                    int quantityTemp = sim.getQuantityTemp();
+                    sim.setQuantityTemp(quantityTemp - buyInstrument.getQuantityPortfolio());
+                    version++;
+                }
+            } while (sim.getQuantityTemp() > 0);
+        });
+        return sellInstrumentsPercent;
     }
 
     private double getSumPayInRub(List<CurrencyOperation> currencyOperations) {
@@ -310,7 +413,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
 
     private ReportInstrument setPercantageByInstrument(List<SellInstrumentPercentage> sellInstrument, String ticker, String name) {
         int quantityAll = sellInstrument.stream()
-                .mapToInt(si -> si.getQuantitySell()).sum();
+                .mapToInt(SellInstrumentPercentage::getQuantitySell).sum();
         double averageCountDay = sellInstrument.stream()
                 .mapToDouble(si -> (double) si.getCountDay() * si.getQuantitySell() / quantityAll).sum();
         double averageProfit = sellInstrument.stream()
@@ -341,7 +444,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
                 BuyInstrument buyInstrument = buyInstruments.get(0);
                 int sellQuantity = sim.getQuantityTemp();
                 if (sellQuantity == buyInstrument.getQuantityPortfolio()) {
-                    SellInstrumentPercentage sellInstrument = getPercantage(sim, buyInstrument, version);
+                    SellInstrumentPercentage sellInstrument = getPercantage(sim, buyInstrument);
                     sellInstrument.setQuantitySell(buyInstrument.getQuantityPortfolio());
                     sellInstrument.setVersion(version);
                     sellInstrumentsPercent.add(sellInstrument);
@@ -351,7 +454,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
                     version++;
 
                 } else if (sellQuantity < buyInstrument.getQuantityPortfolio()) {
-                    SellInstrumentPercentage sellInstrument = getPercantage(sim, buyInstrument, version);
+                    SellInstrumentPercentage sellInstrument = getPercantage(sim, buyInstrument);
                     sellInstrument.setVersion(version);
                     sellInstrumentsPercent.add(sellInstrument);
 
@@ -361,7 +464,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
                     sim.setQuantityTemp(0);
                     version++;
                 } else {
-                    SellInstrumentPercentage sellInstrument = getPercantage(sim, buyInstrument, version);
+                    SellInstrumentPercentage sellInstrument = getPercantage(sim, buyInstrument);
                     sellInstrument.setQuantitySell(buyInstrument.getQuantityPortfolio());
 
                     sellInstrumentsPercent.add(sellInstrument);
@@ -375,8 +478,7 @@ public class AnalyzePortfolioServiceImpl implements AnalyzePortfolioService {
         return sellInstrumentsPercent;
     }
 
-    private SellInstrumentPercentage getPercantage(SellInstrument sellInstrument, BuyInstrument buyInstrument,
-                                                   int version) {
+    private SellInstrumentPercentage getPercantage(SellInstrument sellInstrument, BuyInstrument buyInstrument) {
         SellInstrumentPercentage sellInstrumentPercentage = new SellInstrumentPercentage(sellInstrument.getId());
         sellInstrumentPercentage.setQuantitySell(sellInstrument.getQuantitySell());
         sellInstrumentPercentage.setEndDate(sellInstrument.getEndDate());

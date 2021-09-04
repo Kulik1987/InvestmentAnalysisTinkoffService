@@ -30,6 +30,7 @@ public class CurrencyOperation {
     private double commissionValue;
     private Currency commissionCurrency;
     private String figi;
+    private double paymentTemp;
 
     public CurrencyOperation(String id, Currency currency, LocalDateTime dateOperation, String operationType, double course, int quantity, double payment, String status, double commissionValue, Currency commissionCurrency, String figi) {
         this.id = id;
